@@ -16,21 +16,32 @@ export const SIDEBAR_NAV = [
   { id: SECTION.SIMULATION, label: 'Simulation' },
   { id: SECTION.PRESCRIPTION, label: 'Prescription' },
   { id: SECTION.FOLLOW_UP, label: 'Follow up' },
-  { id: SECTION.SETTINGS, label: 'Settings' },
-  { id: SECTION.DOCTOR_PROFILE, label: 'Doctor profile' },
 ]
 
-export default function AppSidebar({ activeSection, onSelectSection, onBackToWelcome }) {
+const footerAccountBtn = (isActive) =>
+  `w-full rounded-lg border px-3 py-2 text-left text-sm font-semibold shadow-sm transition ${
+    isActive
+      ? 'border-slate-200/80 bg-white text-teal-950 shadow-[inset_3px_0_0_0_#0d9488] ring-1 ring-slate-200/50'
+      : 'border-slate-300/90 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50'
+  }`
+
+export default function AppSidebar({ activeSection, onSelectSection, onLogout }) {
   return (
     <aside
-      className="flex w-60 shrink-0 flex-col border-r border-slate-200/90 bg-white/95 shadow-[4px_0_24px_rgba(15,23,42,0.04)] backdrop-blur-sm"
+      className="flex h-full min-h-0 w-[17.5rem] shrink-0 flex-col bg-linear-to-b from-slate-100/90 via-slate-50/80 to-white"
       aria-label="Main navigation"
     >
-      <div className="border-b border-slate-100 px-4 py-5">
+      <div className="border-b border-slate-200/80 px-5 pb-5 pt-6">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">Triage</p>
-        <p className="mt-1 text-[11px] leading-snug text-slate-500">Clinical decision support</p>
+        <p className="mt-1 font-serif text-lg font-semibold tracking-tight text-slate-900">Workspace</p>
+        <p className="mt-1 text-[11px] font-medium leading-snug text-slate-500">
+          Clinical decision support
+        </p>
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3" aria-label="Workspace sections">
+      <p className="px-5 pb-2 pt-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+        Sections
+      </p>
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-3" aria-label="Workspace sections">
         {SIDEBAR_NAV.map((item) => {
           const isActive = activeSection === item.id
           return (
@@ -38,10 +49,10 @@ export default function AppSidebar({ activeSection, onSelectSection, onBackToWel
               key={item.id}
               type="button"
               onClick={() => onSelectSection(item.id)}
-              className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              className={`w-full rounded-l-md rounded-r-xl border border-transparent py-2.5 pl-3 pr-3 text-left text-sm font-medium leading-snug transition ${
                 isActive
-                  ? 'bg-teal-50 text-teal-900 ring-1 ring-teal-200/80 shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'border-slate-200/80 bg-white text-teal-950 shadow-[inset_3px_0_0_0_#0d9488,2px_0_14px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,1)] ring-1 ring-slate-200/50'
+                  : 'text-slate-600 hover:border-slate-200/60 hover:bg-white/70 hover:text-slate-900'
               }`}
             >
               {item.label}
@@ -49,13 +60,32 @@ export default function AppSidebar({ activeSection, onSelectSection, onBackToWel
           )
         })}
       </nav>
-      <div className="border-t border-slate-100 p-3">
+      <div className="mt-auto border-t border-slate-200/80 bg-white/50 px-3 pb-3 pt-2">
+        <p className="mb-1.5 px-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+          Account
+        </p>
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => onSelectSection(SECTION.SETTINGS)}
+            className={footerAccountBtn(activeSection === SECTION.SETTINGS)}
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectSection(SECTION.DOCTOR_PROFILE)}
+            className={footerAccountBtn(activeSection === SECTION.DOCTOR_PROFILE)}
+          >
+            Doctor profile
+          </button>
+        </div>
         <button
           type="button"
-          onClick={onBackToWelcome}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+          onClick={onLogout}
+          className="mt-2.5 w-full rounded-lg border border-slate-300/90 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
         >
-          ← Back to welcome
+          ← Logout
         </button>
       </div>
     </aside>

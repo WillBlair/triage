@@ -167,7 +167,7 @@ function App() {
 
   if (!flowStarted) {
     return (
-      <div className="min-h-screen pb-16 text-slate-900 sm:pb-14">
+      <div className="min-h-screen pb-14 text-slate-900 sm:pb-12">
         <ClinicalDisclaimer />
         <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-4 py-16 sm:px-6 lg:max-w-4xl lg:px-8">
           <header className="text-center sm:text-left">
@@ -197,22 +197,24 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen pb-16 text-slate-900 sm:pb-14">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden text-slate-900">
       <ClinicalDisclaimer />
-      <div className="flex min-h-[calc(100vh-3.5rem)] sm:min-h-screen">
-        <AppSidebar
-          activeSection={activeSection}
-          onSelectSection={setActiveSection}
-          onBackToWelcome={returnToLanding}
-        />
-        <main className="min-w-0 flex-1 px-4 py-8 pb-28 sm:px-6 lg:max-w-5xl lg:pl-10 lg:pr-12">
+      <div className="flex min-h-0 flex-1 flex-col px-3 pb-11 pt-3 sm:px-5 sm:pb-12 sm:pt-4 lg:px-8">
+        <div className="mx-auto flex min-h-0 w-full max-w-[min(100%,86rem)] flex-1 overflow-hidden rounded-[2rem] border border-slate-200/90 bg-white shadow-[0_20px_64px_rgba(15,23,42,0.09),0_0_0_1px_rgba(15,23,42,0.04)] backdrop-blur-md">
+            <AppSidebar
+              activeSection={activeSection}
+              onSelectSection={setActiveSection}
+              onLogout={returnToLanding}
+            />
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col border-l border-slate-200/80 bg-white">
+              <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5 lg:pl-10 lg:pr-12">
           {error ? (
             <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
               {error}
             </div>
           ) : null}
 
-          <article className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+          <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-50/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
             <div className="border-b border-slate-100 bg-linear-to-r from-teal-50/40 via-white to-slate-50/50 px-6 py-6 sm:px-8">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
                 {sectionMeta.kicker}
@@ -247,7 +249,7 @@ function App() {
               </div>
             </div>
 
-            <div className="px-6 py-6 sm:px-8 sm:py-8">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 sm:px-8 sm:py-6">
               {activeSection === SECTION.ADD_PATIENT ? (
                 <AddPatientIntake
                   intakeForm={intakeForm}
@@ -437,7 +439,9 @@ function App() {
               </div>
             </footer>
           </article>
-        </main>
+              </div>
+            </main>
+        </div>
       </div>
     </div>
   )
