@@ -1,13 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ProfileCard from './components/ProfileCard'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
-import {
-  getHealth,
-  getRecommendations,
-  parseDocument,
-  runSimulation,
-} from './services/api'
+import { getRecommendations, parseDocument, runSimulation } from './services/api'
 
 const STEPS = [
   {
@@ -94,7 +89,6 @@ function Stepper({ step, unlockedStep, onStepChange }) {
 }
 
 function App() {
-  const [isDemoMode, setIsDemoMode] = useState(false)
   const [wizardStep, setWizardStep] = useState(1)
   const [fileName, setFileName] = useState('')
   const [profile, setProfile] = useState(null)
@@ -105,16 +99,6 @@ function App() {
   const [isParsing, setIsParsing] = useState(false)
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
-
-  useEffect(() => {
-    getHealth()
-      .then((payload) => {
-        setIsDemoMode(Boolean(payload.demoMode))
-      })
-      .catch(() => {
-        setIsDemoMode(false)
-      })
-  }, [])
 
   const unlockedStep = useMemo(() => {
     if (!profile) {
@@ -204,12 +188,6 @@ function App() {
 
   return (
     <div className="min-h-screen text-slate-900">
-      {isDemoMode && (
-        <div className="fixed right-4 top-4 z-50 rounded-full border border-amber-200/90 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-800 shadow-sm">
-          Demo mode
-        </div>
-      )}
-
       <main className="mx-auto max-w-3xl px-4 py-10 pb-24 sm:px-6 lg:max-w-4xl lg:px-8">
         <header className="mb-10 text-center sm:mb-12 sm:text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">

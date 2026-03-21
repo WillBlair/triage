@@ -2,32 +2,30 @@ import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp } from './app.js'
 
+function mockAiService(overrides = {}) {
+  return {
+    parseDocument: vi.fn(),
+    createRecommendations: vi.fn(),
+    streamSimulation: vi.fn(),
+    ...overrides,
+  }
+}
+
 describe('createApp', () => {
   it('returns health metadata', async () => {
     const app = createApp({
-      aiService: {
-        isDemoMode: false,
-        parseDocument: vi.fn(),
-        createRecommendations: vi.fn(),
-        streamSimulation: vi.fn(),
-      },
+      aiService: mockAiService(),
     })
 
     const response = await request(app).get('/api/health')
 
     expect(response.status).toBe(200)
     expect(response.body.ok).toBe(true)
-    expect(response.body.demoMode).toBe(false)
   })
 
   it('rejects parse requests without an uploaded document', async () => {
     const app = createApp({
-      aiService: {
-        isDemoMode: false,
-        parseDocument: vi.fn(),
-        createRecommendations: vi.fn(),
-        streamSimulation: vi.fn(),
-      },
+      aiService: mockAiService(),
     })
 
     const response = await request(app).post('/api/parse-document')
@@ -38,12 +36,9 @@ describe('createApp', () => {
 
   it('parses an uploaded pdf into a profile card', async () => {
     const profile = { patientName: 'Margaret Chen' }
-    const aiService = {
-      isDemoMode: false,
+    const aiService = mockAiService({
       parseDocument: vi.fn().mockResolvedValue(profile),
-      createRecommendations: vi.fn(),
-      streamSimulation: vi.fn(),
-    }
+    })
 
     const app = createApp({
       aiService,
@@ -61,12 +56,9 @@ describe('createApp', () => {
   it('returns recommendations for a parsed profile', async () => {
     const recommendations = { drugs: [{ name: 'Amlodipine 5 mg daily' }] }
     const app = createApp({
-      aiService: {
-        isDemoMode: false,
-        parseDocument: vi.fn(),
+      aiService: mockAiService({
         createRecommendations: vi.fn().mockResolvedValue(recommendations),
-        streamSimulation: vi.fn(),
-      },
+      }),
     })
 
     const response = await request(app).post('/api/recommend').send({
@@ -84,12 +76,9 @@ describe('createApp', () => {
     }
 
     const app = createApp({
-      aiService: {
-        isDemoMode: false,
-        parseDocument: vi.fn(),
-        createRecommendations: vi.fn(),
+      aiService: mockAiService({
         streamSimulation: vi.fn().mockReturnValue(simulationEvents()),
-      },
+      }),
     })
 
     const response = await request(app)

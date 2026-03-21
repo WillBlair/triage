@@ -6,7 +6,14 @@ const port = Number(process.env.PORT || 8787)
 const host = process.env.HOST || '0.0.0.0'
 
 async function startServer() {
-  const aiService = createAiService()
+  let aiService
+  try {
+    aiService = createAiService()
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error)
+    process.exit(1)
+  }
+
   const app = createApp({ aiService })
 
   app.listen(port, host, () => {

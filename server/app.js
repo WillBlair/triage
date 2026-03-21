@@ -11,10 +11,7 @@ export function createApp({ aiService }) {
   app.use(express.json())
 
   app.get('/api/health', (_request, response) => {
-    response.json({
-      ok: true,
-      demoMode: aiService.isDemoMode,
-    })
+    response.json({ ok: true })
   })
 
   app.post('/api/parse-document', upload.single('document'), async (request, response, next) => {

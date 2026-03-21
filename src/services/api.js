@@ -10,10 +10,6 @@ async function readJson(response) {
   return payload
 }
 
-export async function getHealth() {
-  return readJson(await fetch('/api/health'))
-}
-
 export async function parseDocument(file) {
   const formData = new FormData()
   formData.append('document', file)

@@ -14,8 +14,7 @@ Hackathon prototype for a narrow clinical workflow: **one PDF chart in** → str
 ## Local setup
 
 - **Node 18+** recommended.
-- **`ANTHROPIC_API_KEY`** — required for live parse, recommendations, and simulation. Without it, the server uses built-in demo data (`server/mockData.js`).
-- Legacy env name **`VITE_ANTHROPIC_API_KEY`** is still read as a fallback but prefer `ANTHROPIC_API_KEY`.
+- **`ANTHROPIC_API_KEY`** — required. Add it to `.env` in the project root (file is gitignored). The API will not start without it.
 
 ```bash
 npm install
@@ -27,4 +26,4 @@ Other commands: `npm run build`, `npm test`, `npm run client` / `npm run server`
 ## Prototype boundaries
 
 - Not a diagnostic device; not clinically validated.
-- Framed for **hypertension-style medication decisions** in the mock content; the UI is generic enough to narrate other wedges.
+- Demo content depends on the PDF you upload; the UI is generic enough to narrate different clinical wedges.

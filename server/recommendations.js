@@ -1,12 +1,6 @@
 import { PDFParse } from 'pdf-parse'
-import {
-  mockParsedProfile,
-  mockRecommendations,
-  mockSimulation,
-} from './mockData.js'
 
-const apiKey =
-  process.env.ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY || ''
+const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || ''
 
 const JSON_RESPONSE_RULE =
   'Return ONLY valid JSON with no markdown, no preamble, and no extra commentary.'
@@ -71,12 +65,6 @@ Write short high-level analysis sentences only.
 No markdown, no bullets, no JSON.
 Keep each sentence specific to the patient and selected drug.
 These notes will be streamed live in a simulation UI.`
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
 
 async function askClaudeJson(system, payload, maxTokens = 1800) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -157,13 +145,14 @@ async function* streamVisibleAnalysis(payload) {
 }
 
 export function createAiService() {
-  return {
-    isDemoMode: !apiKey,
-    async parseDocument(fileBuffer) {
-      if (!apiKey) {
-        return mockParsedProfile
-      }
+  if (!apiKey) {
+    throw new Error(
+      'ANTHROPIC_API_KEY is required. Add it to your .env file (see README).',
+    )
+  }
 
+  return {
+    async parseDocument(fileBuffer) {
       const parser = new PDFParse({ data: fileBuffer })
 
       try {
@@ -176,23 +165,9 @@ export function createAiService() {
       }
     },
     async createRecommendations(profile) {
-      if (!apiKey) {
-        return mockRecommendations
-      }
-
       return askClaudeJson(RECOMMEND_SYSTEM, profile)
     },
     async *streamSimulation({ profile, recommendation }) {
-      if (!apiKey) {
-        for (const line of mockSimulation.visibleThinking) {
-          await sleep(450)
-          yield { type: 'thinking', chunk: `${line} ` }
-        }
-
-        yield { type: 'result', simulation: mockSimulation }
-        return
-      }
-
       for await (const chunk of streamVisibleAnalysis({ profile, recommendation })) {
         yield { type: 'thinking', chunk }
       }
