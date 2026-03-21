@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
+import AddPatientIntake, { DEFAULT_INTAKE_FORM } from './components/AddPatientIntake'
 import AppSidebar, { SECTION } from './components/AppSidebar'
 import PlaceholderSection from './components/PlaceholderSection'
-import ProfileCard from './components/ProfileCard'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
@@ -12,7 +12,7 @@ function ClinicalDisclaimer() {
       aria-label="Prototype disclaimer"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/92 px-3 py-2 text-center text-[11px] leading-snug text-slate-600 shadow-[0_-4px_24px_rgba(15,23,42,0.06)] backdrop-blur-md sm:px-4 sm:text-xs"
     >
-      <span className="font-semibold text-slate-700">Demo.</span>{' '}
+      <span className="font-semibold text-slate-700">Prototype.</span>{' '}
       Illustrative / not clinically validated / not a substitute for professional care.
     </aside>
   )
@@ -21,8 +21,9 @@ function ClinicalDisclaimer() {
 const SECTION_HEADER = {
   [SECTION.ADD_PATIENT]: {
     kicker: 'Intake',
-    title: 'Upload the chart',
-    description: '',
+    title: 'Add new patient',
+    description:
+      'Upload a chart on the left; add encounter context on the right. Continue when the extract looks right.',
   },
   [SECTION.PROFILES]: {
     kicker: 'Records',
@@ -58,7 +59,7 @@ const SECTION_HEADER = {
   [SECTION.DOCTOR_PROFILE]: {
     kicker: 'Account',
     title: 'Doctor profile',
-    description: 'Your professional details for this demo workspace.',
+    description: 'Your professional details for this workspace.',
   },
 }
 
@@ -74,6 +75,7 @@ function App() {
   const [isParsing, setIsParsing] = useState(false)
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
+  const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
 
   const intakeReady = useMemo(
     () => Boolean(profile) && !isParsing && !isLoadingRecommendations,
@@ -96,6 +98,7 @@ function App() {
     setIsParsing(false)
     setIsLoadingRecommendations(false)
     setIsRunningSimulation(false)
+    setIntakeForm({ ...DEFAULT_INTAKE_FORM })
   }, [])
 
   const returnToLanding = useCallback(() => {
@@ -246,8 +249,9 @@ function App() {
 
             <div className="px-6 py-6 sm:px-8 sm:py-8">
               {activeSection === SECTION.ADD_PATIENT ? (
-                <ProfileCard
-                  embedded
+                <AddPatientIntake
+                  intakeForm={intakeForm}
+                  onIntakeChange={setIntakeForm}
                   fileName={fileName}
                   profile={profile}
                   isParsing={isParsing}
@@ -259,8 +263,16 @@ function App() {
 
               {activeSection === SECTION.PROFILES ? (
                 <PlaceholderSection>
-                  This demo does not persist patient records yet. After you add storage, saved profiles will
-                  appear here for quick recall.
+                  <p>
+                    This screen is for <strong className="font-semibold text-slate-800">viewing</strong> saved
+                    patients: search, open a read-only snapshot, and switch between prior runs. It is not where
+                    you upload PDFs or fill intake—use <strong className="font-semibold text-slate-800">Add new patient</strong>{' '}
+                    for that.
+                  </p>
+                  <p className="mt-3 text-slate-500">
+                    This build does not persist records yet; a list and detail view would appear here once
+                    storage is connected.
+                  </p>
                 </PlaceholderSection>
               ) : null}
 
@@ -306,7 +318,7 @@ function App() {
                   <ul className="mt-4 list-inside list-disc space-y-1 text-slate-500">
                     <li>Theme and density</li>
                     <li>Data retention policy</li>
-                    <li>Connected EHR (not available in demo)</li>
+                    <li>Connected EHR (not available in this build)</li>
                   </ul>
                 </PlaceholderSection>
               ) : null}
