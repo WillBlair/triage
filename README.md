@@ -1,9 +1,8 @@
 # Triage
 
-**GitHub “About” description (232 chars):**  
-`Clinical decision-support demo: upload one PDF, extract a patient snapshot (problems, meds, labs), compare three AI-ranked regimens, and run an eight-week projection with a timeline chart, risks, and effects. React, Express, Claude.`
+**Triage** is a small **clinical decision-support demo** (hackathon-style): a three-step wizard that ingests **one discharge or clinic PDF**, uses **Claude** to build a structured patient snapshot, surfaces **three comparable drug regimens** with short rationale, then runs an **eight-week “what-if” projection** for the option you select—timeline chart first, then risk scores, side effects, and clinical pearls.
 
-Hackathon prototype for a narrow clinical workflow: **one PDF chart in** → structured patient snapshot → **three comparable regimens** → **eight-week projection** with risks and pearls.
+**Summary:** React (Vite) front end, Express API, Anthropic Messages API for parse, recommendations, and simulation (NDJSON stream with visible analysis chunks plus final structured projection). Outputs are **generative and illustrative**, not validated for real care.
 
 ## Demo flow
 
