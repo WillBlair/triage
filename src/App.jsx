@@ -4,6 +4,18 @@ import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
 
+function ClinicalDisclaimer() {
+  return (
+    <aside
+      aria-label="Prototype disclaimer"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/92 px-3 py-2 text-center text-[11px] leading-snug text-slate-600 shadow-[0_-4px_24px_rgba(15,23,42,0.06)] backdrop-blur-md sm:px-4 sm:text-xs"
+    >
+      <span className="font-semibold text-slate-700">Demo.</span>{' '}
+      Illustrative / not clinically validated / not a substitute for professional care.
+    </aside>
+  )
+}
+
 const STEPS = [
   {
     id: 1,
@@ -209,7 +221,8 @@ function App() {
 
   if (!flowStarted) {
     return (
-      <div className="min-h-screen text-slate-900">
+      <div className="min-h-screen pb-16 text-slate-900 sm:pb-14">
+        <ClinicalDisclaimer />
         <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-4 py-16 sm:px-6 lg:max-w-4xl lg:px-8">
           <header className="text-center sm:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">
@@ -245,7 +258,8 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen text-slate-900">
+    <div className="min-h-screen pb-16 text-slate-900 sm:pb-14">
+      <ClinicalDisclaimer />
       <main className="mx-auto max-w-3xl px-4 py-10 pb-24 sm:px-6 lg:max-w-4xl lg:px-8">
         <header className="mb-8 sm:mb-10">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
