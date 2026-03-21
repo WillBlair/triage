@@ -124,7 +124,8 @@ function RecommendationList({
           <div
             className={`flex items-center justify-center text-center text-sm leading-relaxed text-slate-500 ${embedded ? 'min-h-[160px]' : 'min-h-[360px]'}`}
           >
-            Go back to step 1 and upload a PDF to load options.
+            Upload a clinical PDF from <strong className="font-semibold text-slate-700">Add new patient</strong>{' '}
+            to load options.
           </div>
         )}
 

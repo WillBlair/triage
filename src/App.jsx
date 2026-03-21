@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
+import AppSidebar, { SECTION } from './components/AppSidebar'
+import PlaceholderSection from './components/PlaceholderSection'
 import ProfileCard from './components/ProfileCard'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
@@ -16,91 +18,53 @@ function ClinicalDisclaimer() {
   )
 }
 
-const STEPS = [
-  {
-    id: 1,
-    short: 'Intake',
+const SECTION_HEADER = {
+  [SECTION.ADD_PATIENT]: {
+    kicker: 'Intake',
     title: 'Upload the chart',
     description: '',
   },
-  {
-    id: 2,
-    short: 'Decide',
+  [SECTION.PROFILES]: {
+    kicker: 'Records',
+    title: 'Patient profiles',
+    description: 'Open a saved profile when your workspace is connected to persistent storage.',
+  },
+  [SECTION.RECOMMENDATIONS]: {
+    kicker: 'Decide',
     title: 'Pick a treatment direction',
     description: '',
   },
-  {
-    id: 3,
-    short: 'Simulate',
+  [SECTION.SIMULATION]: {
+    kicker: 'Simulate',
     title: 'Run the what-if',
     description:
       'Generate the eight-week projection first, then read risks and clinical pearls underneath.',
   },
-]
-
-function Stepper({ step, unlockedStep, onStepChange }) {
-  return (
-    <nav aria-label="Progress">
-      <ol className="flex items-center gap-0">
-        {STEPS.map((s, index) => {
-          const isDone = step > s.id
-          const isCurrent = step === s.id
-          const isReachable = s.id <= unlockedStep
-          const showConnector = index < STEPS.length - 1
-
-          return (
-            <li key={s.id} className="flex flex-1 items-center min-w-0">
-              <button
-                type="button"
-                disabled={!isReachable}
-                onClick={() => isReachable && onStepChange(s.id)}
-                className={`group flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition sm:max-w-none ${
-                  isCurrent
-                    ? 'border-teal-300 bg-teal-50/90 shadow-sm ring-1 ring-teal-200/60'
-                    : isDone
-                      ? 'border-slate-200/80 bg-white hover:border-teal-200'
-                      : 'border-slate-200/60 bg-slate-50/80 opacity-60'
-                } ${!isReachable ? 'cursor-not-allowed opacity-50' : ''}`}
-              >
-                <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums ${
-                    isDone
-                      ? 'bg-emerald-500 text-white'
-                      : isCurrent
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-slate-200 text-slate-600'
-                  }`}
-                >
-                  {isDone ? '✓' : s.id}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Step {s.id}
-                  </span>
-                  <span className="block truncate text-sm font-semibold text-slate-900">
-                    {s.short}
-                  </span>
-                </span>
-              </button>
-              {showConnector && (
-                <div
-                  className={`mx-1 hidden h-px w-6 shrink-0 sm:block ${
-                    step > s.id ? 'bg-teal-300' : 'bg-slate-200'
-                  }`}
-                  aria-hidden
-                />
-              )}
-            </li>
-          )
-        })}
-      </ol>
-    </nav>
-  )
+  [SECTION.PRESCRIPTION]: {
+    kicker: 'Prescribe',
+    title: 'Prescription',
+    description: 'Draft and document orders in a future release.',
+  },
+  [SECTION.FOLLOW_UP]: {
+    kicker: 'Care plan',
+    title: 'Follow up',
+    description: 'Schedule visits, tasks, and reminders in a future release.',
+  },
+  [SECTION.SETTINGS]: {
+    kicker: 'Workspace',
+    title: 'Settings',
+    description: 'Preferences and integrations will appear here.',
+  },
+  [SECTION.DOCTOR_PROFILE]: {
+    kicker: 'Account',
+    title: 'Doctor profile',
+    description: 'Your professional details for this demo workspace.',
+  },
 }
 
 function App() {
   const [flowStarted, setFlowStarted] = useState(false)
-  const [wizardStep, setWizardStep] = useState(1)
+  const [activeSection, setActiveSection] = useState(SECTION.ADD_PATIENT)
   const [fileName, setFileName] = useState('')
   const [profile, setProfile] = useState(null)
   const [recommendations, setRecommendations] = useState(null)
@@ -111,39 +75,18 @@ function App() {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
 
-  const unlockedStep = useMemo(() => {
-    if (!profile) {
-      return 1
-    }
-    if (!recommendations || !selectedDrug) {
-      return 2
-    }
-    return 3
-  }, [profile, recommendations, selectedDrug])
-
-  const stepReady = useMemo(
-    () => ({
-      1: Boolean(profile) && !isParsing && !isLoadingRecommendations,
-      2: Boolean(recommendations?.drugs?.length) && Boolean(selectedDrug),
-      3: true,
-    }),
-    [profile, isParsing, isLoadingRecommendations, recommendations, selectedDrug],
+  const intakeReady = useMemo(
+    () => Boolean(profile) && !isParsing && !isLoadingRecommendations,
+    [profile, isParsing, isLoadingRecommendations],
   )
 
-  const goToStep = useCallback(
-    (next) => {
-      if (next < 1 || next > 3) {
-        return
-      }
-      if (next <= unlockedStep) {
-        setWizardStep(next)
-      }
-    },
-    [unlockedStep],
+  const recReady = useMemo(
+    () => Boolean(recommendations?.drugs?.length) && Boolean(selectedDrug),
+    [recommendations, selectedDrug],
   )
 
   const resetWizard = useCallback(() => {
-    setWizardStep(1)
+    setActiveSection(SECTION.ADD_PATIENT)
     setFileName('')
     setProfile(null)
     setRecommendations(null)
@@ -167,7 +110,6 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setWizardStep(1)
     setIsParsing(true)
     setIsLoadingRecommendations(false)
 
@@ -213,10 +155,11 @@ function App() {
     }
   }
 
-  const currentMeta = STEPS[wizardStep - 1]
+  const sectionMeta = SECTION_HEADER[activeSection]
 
   const beginFlow = useCallback(() => {
     setFlowStarted(true)
+    setActiveSection(SECTION.ADD_PATIENT)
   }, [])
 
   if (!flowStarted) {
@@ -242,14 +185,7 @@ function App() {
               onClick={beginFlow}
               className="rounded-2xl bg-teal-600 px-6 py-3.5 text-center text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 sm:min-w-[11rem]"
             >
-              I&apos;m a patient
-            </button>
-            <button
-              type="button"
-              onClick={beginFlow}
-              className="rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-200 hover:bg-teal-50/50 sm:min-w-[11rem]"
-            >
-              I&apos;m a doctor
+              Get started
             </button>
           </div>
         </main>
@@ -260,165 +196,237 @@ function App() {
   return (
     <div className="min-h-screen pb-16 text-slate-900 sm:pb-14">
       <ClinicalDisclaimer />
-      <main className="mx-auto max-w-3xl px-4 py-10 pb-24 sm:px-6 lg:max-w-4xl lg:px-8">
-        <header className="mb-8 sm:mb-10">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <button
-              type="button"
-              onClick={returnToLanding}
-              className="order-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:order-1"
-            >
-              ← Back to welcome
-            </button>
-            <p className="order-1 text-center text-xs font-semibold uppercase tracking-[0.28em] text-teal-700 sm:order-2 sm:text-right">
-              Triage
-            </p>
-          </div>
-        </header>
+      <div className="flex min-h-[calc(100vh-3.5rem)] sm:min-h-screen">
+        <AppSidebar
+          activeSection={activeSection}
+          onSelectSection={setActiveSection}
+          onBackToWelcome={returnToLanding}
+        />
+        <main className="min-w-0 flex-1 px-4 py-8 pb-28 sm:px-6 lg:max-w-5xl lg:pl-10 lg:pr-12">
+          {error ? (
+            <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              {error}
+            </div>
+          ) : null}
 
-        {error && (
-          <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            {error}
-          </div>
-        )}
-
-        <article className="mt-8 overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-          <div className="border-b border-slate-100 bg-linear-to-r from-teal-50/40 via-white to-slate-50/50 px-6 py-6 sm:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
-              Step {wizardStep} of 3
-            </p>
-            <div
-              className={
-                wizardStep === 1
-                  ? 'mt-2 flex flex-col gap-4 sm:mt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6'
-                  : 'mt-2'
-              }
-            >
-              <div className="min-w-0 flex-1">
-                <h2 className="font-serif text-2xl font-semibold text-slate-950 sm:text-3xl">
-                  {currentMeta.title}
-                </h2>
-                {currentMeta.description ? (
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-                    {currentMeta.description}
-                  </p>
+          <article className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+            <div className="border-b border-slate-100 bg-linear-to-r from-teal-50/40 via-white to-slate-50/50 px-6 py-6 sm:px-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
+                {sectionMeta.kicker}
+              </p>
+              <div
+                className={
+                  activeSection === SECTION.ADD_PATIENT
+                    ? 'mt-2 flex flex-col gap-4 sm:mt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6'
+                    : 'mt-2'
+                }
+              >
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-serif text-2xl font-semibold text-slate-950 sm:text-3xl">
+                    {sectionMeta.title}
+                  </h2>
+                  {sectionMeta.description ? (
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                      {sectionMeta.description}
+                    </p>
+                  ) : null}
+                </div>
+                {activeSection === SECTION.ADD_PATIENT ? (
+                  <button
+                    type="button"
+                    disabled={!intakeReady}
+                    onClick={() => setActiveSection(SECTION.RECOMMENDATIONS)}
+                    className="w-full shrink-0 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40 sm:mt-1 sm:w-auto sm:self-start"
+                  >
+                    Continue to options
+                  </button>
                 ) : null}
               </div>
-              {wizardStep === 1 ? (
-                <button
-                  type="button"
-                  disabled={!stepReady[1]}
-                  onClick={() => goToStep(2)}
-                  className="w-full shrink-0 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40 sm:mt-1 sm:w-auto sm:self-start"
-                >
-                  Continue to options
-                </button>
+            </div>
+
+            <div className="px-6 py-6 sm:px-8 sm:py-8">
+              {activeSection === SECTION.ADD_PATIENT ? (
+                <ProfileCard
+                  embedded
+                  fileName={fileName}
+                  profile={profile}
+                  isParsing={isParsing}
+                  isLoadingRecommendations={isLoadingRecommendations}
+                  onSelectFile={handleSelectFile}
+                  error=""
+                />
+              ) : null}
+
+              {activeSection === SECTION.PROFILES ? (
+                <PlaceholderSection>
+                  This demo does not persist patient records yet. After you add storage, saved profiles will
+                  appear here for quick recall.
+                </PlaceholderSection>
+              ) : null}
+
+              {activeSection === SECTION.RECOMMENDATIONS ? (
+                <RecommendationList
+                  embedded
+                  recommendations={recommendations}
+                  selectedDrugName={selectedDrug?.name || ''}
+                  isLoading={isLoadingRecommendations}
+                  onSelect={(drug) => {
+                    setSelectedDrug(drug)
+                    setSimulation(null)
+                  }}
+                />
+              ) : null}
+
+              {activeSection === SECTION.SIMULATION ? (
+                <SimulationPanel
+                  embedded
+                  selectedDrug={selectedDrug}
+                  simulation={simulation}
+                  isRunning={isRunningSimulation}
+                  onRun={handleRunSimulation}
+                />
+              ) : null}
+
+              {activeSection === SECTION.PRESCRIPTION ? (
+                <PlaceholderSection>
+                  E-prescribing and order sets are not wired up in this prototype. Use your standard
+                  prescribing workflow alongside the recommendations from this tool.
+                </PlaceholderSection>
+              ) : null}
+
+              {activeSection === SECTION.FOLLOW_UP ? (
+                <PlaceholderSection>
+                  Follow-up scheduling, tasks, and patient messaging will live here in a future version.
+                </PlaceholderSection>
+              ) : null}
+
+              {activeSection === SECTION.SETTINGS ? (
+                <PlaceholderSection>
+                  <p>Workspace preferences, API keys, and integrations will be configurable here.</p>
+                  <ul className="mt-4 list-inside list-disc space-y-1 text-slate-500">
+                    <li>Theme and density</li>
+                    <li>Data retention policy</li>
+                    <li>Connected EHR (not available in demo)</li>
+                  </ul>
+                </PlaceholderSection>
+              ) : null}
+
+              {activeSection === SECTION.DOCTOR_PROFILE ? (
+                <PlaceholderSection>
+                  <p>
+                    Your display name, specialty, and NPI can be shown on generated summaries when this
+                    section is connected to an account backend.
+                  </p>
+                  <dl className="mt-6 grid gap-4 border-t border-slate-200/80 pt-6 text-sm sm:grid-cols-2">
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Display name
+                      </dt>
+                      <dd className="mt-1 text-slate-500">—</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Specialty
+                      </dt>
+                      <dd className="mt-1 text-slate-500">—</dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">NPI</dt>
+                      <dd className="mt-1 text-slate-500">—</dd>
+                    </div>
+                  </dl>
+                </PlaceholderSection>
               ) : null}
             </div>
-          </div>
 
-          <div className="px-6 py-6 sm:px-8 sm:py-8">
-            {wizardStep === 1 && (
-              <ProfileCard
-                embedded
-                fileName={fileName}
-                profile={profile}
-                isParsing={isParsing}
-                isLoadingRecommendations={isLoadingRecommendations}
-                onSelectFile={handleSelectFile}
-                error=""
-              />
-            )}
-
-            {wizardStep === 2 && (
-              <RecommendationList
-                embedded
-                recommendations={recommendations}
-                selectedDrugName={selectedDrug?.name || ''}
-                isLoading={isLoadingRecommendations}
-                onSelect={(drug) => {
-                  setSelectedDrug(drug)
-                  setSimulation(null)
-                }}
-              />
-            )}
-
-            {wizardStep === 3 && (
-              <SimulationPanel
-                embedded
-                selectedDrug={selectedDrug}
-                simulation={simulation}
-                isRunning={isRunningSimulation}
-                onRun={handleRunSimulation}
-              />
-            )}
-          </div>
-
-          <div className="border-t border-slate-100 bg-slate-50/30 px-4 py-5 sm:px-6 sm:py-6">
-            <Stepper step={wizardStep} unlockedStep={unlockedStep} onStepChange={goToStep} />
-          </div>
-
-          <footer className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-            <div className="text-xs text-slate-500">
-              {wizardStep === 1 && !stepReady[1] && isParsing && (
-                <span>Parsing PDF — structured summary loads in the panel below.</span>
-              )}
-              {wizardStep === 1 && !stepReady[1] && !isParsing && isLoadingRecommendations && (
-                <span>
-                  Options generating — continue when the button above enables (summary is already visible).
-                </span>
-              )}
-              {wizardStep === 1 && stepReady[1] && (
-                <span>Chart summary and options are ready. Continue when the snapshot looks right.</span>
-              )}
-              {wizardStep === 2 && !stepReady[2] && <span>Loading treatment options…</span>}
-              {wizardStep === 2 && stepReady[2] && (
-                <span>
-                  Selected:{' '}
-                  <span className="font-semibold text-slate-700">{selectedDrug?.name}</span>
-                </span>
-              )}
-              {wizardStep === 3 && (
-                <span>
-                  Run the simulation when you are narrating the &quot;wow&quot; moment.
-                </span>
-              )}
-            </div>
-            {wizardStep !== 1 ? (
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {wizardStep > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => goToStep(wizardStep - 1)}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    Back
-                  </button>
-                )}
-                {wizardStep === 2 && (
-                  <button
-                    type="button"
-                    disabled={!stepReady[2]}
-                    onClick={() => goToStep(3)}
-                    className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Continue to simulation
-                  </button>
-                )}
-                {wizardStep === 3 && simulation && (
-                  <button
-                    type="button"
-                    onClick={resetWizard}
-                    className="rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100"
-                  >
-                    Start over
-                  </button>
-                )}
+            <footer className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <div className="text-xs text-slate-500">
+                {activeSection === SECTION.ADD_PATIENT && !intakeReady && isParsing ? (
+                  <span>Parsing PDF — structured summary loads in the panel above.</span>
+                ) : null}
+                {activeSection === SECTION.ADD_PATIENT && !intakeReady && !isParsing && isLoadingRecommendations ? (
+                  <span>
+                    Options generating — continue when the button above enables (summary is already visible).
+                  </span>
+                ) : null}
+                {activeSection === SECTION.ADD_PATIENT && intakeReady ? (
+                  <span>Chart summary and options are ready. Continue when the snapshot looks right.</span>
+                ) : null}
+                {activeSection === SECTION.RECOMMENDATIONS && isLoadingRecommendations ? (
+                  <span>Loading treatment options…</span>
+                ) : null}
+                {activeSection === SECTION.RECOMMENDATIONS &&
+                !isLoadingRecommendations &&
+                !recommendations?.drugs?.length ? (
+                  <span>Upload a chart under Add new patient to generate options.</span>
+                ) : null}
+                {activeSection === SECTION.RECOMMENDATIONS &&
+                !isLoadingRecommendations &&
+                Boolean(recommendations?.drugs?.length) ? (
+                  <span>
+                    Selected:{' '}
+                    <span className="font-semibold text-slate-700">{selectedDrug?.name || '—'}</span>
+                  </span>
+                ) : null}
+                {activeSection === SECTION.SIMULATION && !selectedDrug ? (
+                  <span>Choose a regimen under Drug recommendation first.</span>
+                ) : null}
+                {activeSection === SECTION.SIMULATION && selectedDrug ? (
+                  <span>Run the simulation when you are narrating the &quot;wow&quot; moment.</span>
+                ) : null}
+                {activeSection === SECTION.PROFILES ||
+                activeSection === SECTION.PRESCRIPTION ||
+                activeSection === SECTION.FOLLOW_UP ||
+                activeSection === SECTION.SETTINGS ||
+                activeSection === SECTION.DOCTOR_PROFILE ? (
+                  <span>This area is a scaffold for upcoming workflow.</span>
+                ) : null}
               </div>
-            ) : null}
-          </footer>
-        </article>
-      </main>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {activeSection === SECTION.RECOMMENDATIONS ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection(SECTION.ADD_PATIENT)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!recReady}
+                      onClick={() => setActiveSection(SECTION.SIMULATION)}
+                      className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Continue to simulation
+                    </button>
+                  </>
+                ) : null}
+                {activeSection === SECTION.SIMULATION ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection(SECTION.RECOMMENDATIONS)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      Back
+                    </button>
+                    {simulation ? (
+                      <button
+                        type="button"
+                        onClick={resetWizard}
+                        className="rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100"
+                      >
+                        Start over
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            </footer>
+          </article>
+        </main>
+      </div>
     </div>
   )
 }
