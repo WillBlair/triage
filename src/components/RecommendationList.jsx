@@ -130,15 +130,22 @@ function RecommendationList({
 
         {!isLoading && recommendations && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                How to use this step
-              </p>
-              <p className="mt-1 text-sm text-slate-700">
-                Pick the regimen you would discuss with the patient (or the one you want to model). One row drives
-                the simulation in step 3.
-              </p>
-            </div>
+            <fieldset>
+              <legend className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Therapeutic options
+              </legend>
+              <div className="space-y-2" role="radiogroup" aria-label="Therapeutic options">
+                {recommendations.drugs.map((drug, index) => (
+                  <OptionRow
+                    key={`${drug.name}-${drug.dose}`}
+                    rank={index + 1}
+                    drug={drug}
+                    isSelected={selectedDrugName === drug.name}
+                    onSelect={() => onSelect(drug)}
+                  />
+                ))}
+              </div>
+            </fieldset>
 
             {synthesis && (
               <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
@@ -161,23 +168,6 @@ function RecommendationList({
                 )}
               </div>
             )}
-
-            <fieldset>
-              <legend className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Therapeutic options
-              </legend>
-              <div className="space-y-2" role="radiogroup" aria-label="Therapeutic options">
-                {recommendations.drugs.map((drug, index) => (
-                  <OptionRow
-                    key={`${drug.name}-${drug.dose}`}
-                    rank={index + 1}
-                    drug={drug}
-                    isSelected={selectedDrugName === drug.name}
-                    onSelect={() => onSelect(drug)}
-                  />
-                ))}
-              </div>
-            </fieldset>
           </div>
         )}
       </div>

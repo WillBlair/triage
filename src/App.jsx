@@ -16,8 +16,7 @@ const STEPS = [
     id: 2,
     short: 'Decide',
     title: 'Pick a treatment direction',
-    description:
-      'Review ranked options with reasoning, choose the line you want to simulate, then advance to the timeline.',
+    description: '',
   },
   {
     id: 3,
@@ -215,9 +214,11 @@ function App() {
             <h2 className="mt-2 font-serif text-2xl font-semibold text-slate-950 sm:text-3xl">
               {currentMeta.title}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-              {currentMeta.description}
-            </p>
+            {currentMeta.description ? (
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                {currentMeta.description}
+              </p>
+            ) : null}
           </div>
 
           <div className="px-6 py-6 sm:px-8 sm:py-8">
