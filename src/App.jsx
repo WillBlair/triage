@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import AddPatientIntake, { DEFAULT_INTAKE_FORM } from './components/AddPatientIntake'
 import AppSidebar, { SECTION } from './components/AppSidebar'
 import PlaceholderSection from './components/PlaceholderSection'
+import PrescribeSummary from './components/PrescribeSummary'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
@@ -43,8 +44,9 @@ const SECTION_HEADER = {
   },
   [SECTION.PRESCRIPTION]: {
     kicker: 'Prescribe',
-    title: 'Prescription',
-    description: 'Draft and document orders in a future release.',
+    title: 'Prescribing summary',
+    description:
+      'Short excerpt from the last simulation run: copy for pharmacy messaging, then complete authorization in your real prescribing workflow.',
   },
   [SECTION.FOLLOW_UP]: {
     kicker: 'Care plan',
@@ -298,14 +300,38 @@ function App() {
                   simulation={simulation}
                   isRunning={isRunningSimulation}
                   onRun={handleRunSimulation}
+                  onContinueToPrescribe={() => setActiveSection(SECTION.PRESCRIPTION)}
                 />
               ) : null}
 
               {activeSection === SECTION.PRESCRIPTION ? (
-                <PlaceholderSection>
-                  E-prescribing and order sets are not wired up in this prototype. Use your standard
-                  prescribing workflow alongside the recommendations from this tool.
-                </PlaceholderSection>
+                simulation && selectedDrug ? (
+                  <PrescribeSummary
+                    profile={profile}
+                    selectedDrug={selectedDrug}
+                    simulation={simulation}
+                  />
+                ) : (
+                  <PlaceholderSection title="Run a simulation first">
+                    <p>
+                      The <strong className="font-semibold text-slate-800">Prescribe</strong> screen
+                      shows a compact version of your last eight-week projection so you can paste it
+                      for the pharmacist and pair it with your usual sign-off process.
+                    </p>
+                    <p className="mt-3 text-slate-500">
+                      {!selectedDrug
+                        ? 'Choose a drug under Drug recommendation, then open Simulation.'
+                        : 'Open Simulation and run the projection—then return here or use Continue to Prescribe from that screen.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection(SECTION.SIMULATION)}
+                      className="mt-5 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
+                    >
+                      Go to Simulation
+                    </button>
+                  </PlaceholderSection>
+                )
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
@@ -385,11 +411,19 @@ function App() {
                 {activeSection === SECTION.SIMULATION && !selectedDrug ? (
                   <span>Choose a regimen under Drug recommendation first.</span>
                 ) : null}
-                {activeSection === SECTION.SIMULATION && selectedDrug ? (
+                {activeSection === SECTION.SIMULATION && selectedDrug && !simulation ? (
                   <span>Run the simulation when you are narrating the &quot;wow&quot; moment.</span>
                 ) : null}
+                {activeSection === SECTION.SIMULATION && selectedDrug && simulation ? (
+                  <span>Projection complete. Continue to Prescribe for a pharmacy-ready excerpt.</span>
+                ) : null}
+                {activeSection === SECTION.PRESCRIPTION && simulation && selectedDrug ? (
+                  <span>Summary is from the selected regimen and the last simulation run.</span>
+                ) : null}
+                {activeSection === SECTION.PRESCRIPTION && (!simulation || !selectedDrug) ? (
+                  <span>Complete a simulation to populate this summary.</span>
+                ) : null}
                 {activeSection === SECTION.PROFILES ||
-                activeSection === SECTION.PRESCRIPTION ||
                 activeSection === SECTION.FOLLOW_UP ||
                 activeSection === SECTION.SETTINGS ||
                 activeSection === SECTION.DOCTOR_PROFILE ? (
@@ -426,14 +460,34 @@ function App() {
                       Back
                     </button>
                     {simulation ? (
-                      <button
-                        type="button"
-                        onClick={resetWizard}
-                        className="rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100"
-                      >
-                        Start over
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={resetWizard}
+                          className="rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100"
+                        >
+                          Start over
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveSection(SECTION.PRESCRIPTION)}
+                          className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
+                        >
+                          Continue to Prescribe
+                        </button>
+                      </>
                     ) : null}
+                  </>
+                ) : null}
+                {activeSection === SECTION.PRESCRIPTION ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection(SECTION.SIMULATION)}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      Back to simulation
+                    </button>
                   </>
                 ) : null}
               </div>

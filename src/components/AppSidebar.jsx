@@ -14,7 +14,7 @@ export const SIDEBAR_NAV = [
   { id: SECTION.PROFILES, label: 'View existing patient profiles' },
   { id: SECTION.RECOMMENDATIONS, label: 'Drug recommendation' },
   { id: SECTION.SIMULATION, label: 'Simulation' },
-  { id: SECTION.PRESCRIPTION, label: 'Prescription' },
+  { id: SECTION.PRESCRIPTION, label: 'Prescribe' },
   { id: SECTION.FOLLOW_UP, label: 'Follow up' },
 ]
 

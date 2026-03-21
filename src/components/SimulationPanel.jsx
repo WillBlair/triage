@@ -38,6 +38,7 @@ function SimulationPanel({
   simulation,
   isRunning,
   onRun,
+  onContinueToPrescribe,
 }) {
   const shell = embedded
     ? 'flex flex-col'
@@ -158,6 +159,22 @@ function SimulationPanel({
           </div>
         </div>
       </div>
+
+      {embedded && simulation && typeof onContinueToPrescribe === 'function' ? (
+        <div className="mt-5 flex flex-col items-stretch gap-2 border-t border-slate-200/80 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-600">
+            Next: open a shortened summary derived from this run—ready to share with pharmacy and
+            sign off offline.
+          </p>
+          <button
+            type="button"
+            onClick={onContinueToPrescribe}
+            className="shrink-0 rounded-xl border border-teal-200 bg-teal-50/90 px-4 py-2.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-100"
+          >
+            Continue to Prescribe
+          </button>
+        </div>
+      ) : null}
     </section>
   )
 }
