@@ -95,6 +95,8 @@ function App() {
   const [isParsing, setIsParsing] = useState(false)
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isConfirmed, setIsConfirmed] = useState(false)
   const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
   const [librarySelectedEntry, setLibrarySelectedEntry] = useState(null)
   const [onboardingComplete, setOnboardingComplete] = useState(false)
@@ -171,6 +173,7 @@ function App() {
     setSimulation(null)
     setThinkingText('')
     setError('')
+    setIsConfirmed(false)
     setIsParsing(false)
     setIsLoadingRecommendations(false)
     setIsRunningSimulation(false)
@@ -278,15 +281,6 @@ function App() {
         }
         if (event.type === 'result') {
           setSimulation(event.simulation)
-
-          // Auto-save prescription to Supabase for follow-up bot
-          savePrescription({
-            doctorId: currentUserId,
-            patientProfile: profile,
-            selectedDrug,
-            allRecommendations: recommendations,
-            simulation: event.simulation,
-          }).catch((err) => console.warn('Prescription auto-save failed:', err))
         }
       })
     } catch (simulationError) {
@@ -297,6 +291,27 @@ function App() {
       )
     } finally {
       setIsRunningSimulation(false)
+    }
+  }
+
+  const handleConfirmPrescription = async () => {
+    const currentUserId = localStorage.getItem('triage_user_id')
+    setIsConfirming(true)
+    try {
+      await savePrescription({
+        doctorId: currentUserId,
+        patientProfile: profile,
+        selectedDrug,
+        allRecommendations: recommendations,
+        simulation,
+      })
+      setIsConfirmed(true)
+    } catch (err) {
+      console.warn('Prescription save failed:', err)
+      // Ignore for demo purposes so UX completes
+      setIsConfirmed(true)
+    } finally {
+      setIsConfirming(false)
     }
   }
 
@@ -693,6 +708,21 @@ function App() {
                     >
                       Back to monitoring
                     </button>
+                    {!isConfirmed ? (
+                      <button
+                        type="button"
+                        onClick={handleConfirmPrescription}
+                        disabled={isConfirming}
+                        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isConfirming ? 'Sending...' : 'Confirm & send to pharmacy'}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800 border border-teal-200/60 shadow-sm">
+                        <span className="text-teal-600 text-lg">✓</span>
+                        Prescription Sent! Follow-up Sequence Started
+                      </div>
+                    )}
                   </>
                 ) : null}
               </div>

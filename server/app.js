@@ -165,6 +165,29 @@ export function createApp({ aiService }) {
         return response.status(500).json({ error: 'Failed to save prescription.' })
       }
 
+      // Hackathon Flow: Instantly send Telegram message!
+      // Grab the most recent intake_token that has a telegram_chat_id matching this patient name
+      try {
+        const { data: intakeData } = await supabase
+          .from('intake_tokens')
+          .select('telegram_chat_id')
+          .not('telegram_chat_id', 'is', null)
+          .eq('patient->>name', patientProfile.name || '')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (intakeData?.telegram_chat_id) {
+          const firstName = patientProfile.name?.split(' ')[0] || 'there'
+          const drugName = selectedDrug.name
+          const msg = `✅ Hi ${firstName}, Dr. Blair just finalized your prescription for ${drugName} and sent it to your pharmacy.\n\nPlease start taking it as directed. I will automatically check back in with you next week to see how you are doing! 💊`
+          
+          await sendTelegramMessage(intakeData.telegram_chat_id, msg)
+        }
+      } catch (err) {
+        console.warn('Initial follow-up Telegram failed:', err)
+      }
+
       response.status(201).json({ id: data.id, saved: true })
     } catch (error) {
       next(error)
