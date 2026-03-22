@@ -102,7 +102,7 @@ function ConversationModal({ prescription, onClose, onGenerateSummary, generatin
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Check-in response
             </p>
-            <p className="mt-0.5 font-semibold text-slate-900">{prescription.patient_email}</p>
+            <p className="mt-0.5 font-semibold text-slate-900">{displayEmail(prescription)}</p>
           </div>
           <button
             type="button"
@@ -128,7 +128,7 @@ function ConversationModal({ prescription, onClose, onGenerateSummary, generatin
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Medication
                 </p>
-                <p className="mt-1 font-medium text-slate-800">{prescription.medication_name || '—'}</p>
+                <p className="mt-1 font-medium text-slate-800">{displayDrug(prescription)}</p>
               </div>
 
               {/* Emergency flag */}
@@ -219,7 +219,9 @@ function ConversationModal({ prescription, onClose, onGenerateSummary, generatin
 
         <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
           <p className="text-xs text-slate-400">
-            Dispatched {new Date(prescription.prescribed_at).toLocaleDateString()}
+            {displayDate(prescription)
+              ? `Saved ${new Date(displayDate(prescription)).toLocaleDateString()}`
+              : ''}
           </p>
           <button
             type="button"
@@ -240,6 +242,17 @@ function getStatus(prescription) {
   return 'pending'
 }
 
+// Bot rows use patient_email + medication_name; app rows use patient_name + selected_drug (JSON)
+function displayEmail(p) {
+  return p.patient_email || p.patient_name || '—'
+}
+function displayDrug(p) {
+  return p.medication_name || p.selected_drug?.name || '—'
+}
+function displayDate(p) {
+  return p.created_at || p.prescribed_at || null
+}
+
 export default function FollowUpPanel() {
   const [prescriptions, setPrescriptions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -253,12 +266,13 @@ export default function FollowUpPanel() {
     const { data } = await supabase
       .from('prescriptions')
       .select(
-        `id, patient_email, medication_name, prescribed_at, checked_in,
+        `id, patient_email, patient_name, medication_name, selected_drug,
+         prescribed_at, created_at, checked_in,
          checkin_responses (
            id, symptoms_selected, free_text_response, emergency_flagged, completed_at, conversation_summary
          )`,
       )
-      .order('prescribed_at', { ascending: false })
+      .order('created_at', { ascending: false })
     setPrescriptions(data ?? [])
     setLoading(false)
   }, [])
@@ -275,6 +289,11 @@ export default function FollowUpPanel() {
       )
       .on(
         'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'prescriptions' },
+        fetchData,
+      )
+      .on(
+        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'prescriptions' },
         fetchData,
       )
@@ -286,12 +305,14 @@ export default function FollowUpPanel() {
 
   const selected = prescriptions.find((p) => p.id === selectedId) ?? null
 
-  const filtered = prescriptions.filter(
-    (p) =>
-      !search ||
-      p.patient_email?.toLowerCase().includes(search.toLowerCase()) ||
-      p.medication_name?.toLowerCase().includes(search.toLowerCase()),
-  )
+  const filtered = prescriptions.filter((p) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      displayEmail(p).toLowerCase().includes(q) ||
+      displayDrug(p).toLowerCase().includes(q)
+    )
+  })
 
   const total = prescriptions.length
   const completed = prescriptions.filter((p) => p.checked_in).length
@@ -401,17 +422,17 @@ export default function FollowUpPanel() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-slate-900">
-                              {p.patient_email || '—'}
+                              {displayEmail(p)}
                             </p>
                             <p className="mt-0.5 truncate text-xs text-slate-500">
-                              {p.medication_name || '—'}
+                              {displayDrug(p)}
                             </p>
                           </div>
                           <StatusBadge status={status} />
                         </div>
                         <p className="mt-1 text-[11px] text-slate-400">
-                          {p.prescribed_at
-                            ? new Date(p.prescribed_at).toLocaleDateString()
+                          {displayDate(p)
+                            ? new Date(displayDate(p)).toLocaleDateString()
                             : ''}
                         </p>
                       </button>
@@ -458,17 +479,17 @@ export default function FollowUpPanel() {
                     Patient
                   </p>
                   <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {selected.patient_email || '—'}
+                    {displayEmail(selected)}
                   </p>
-                  <p className="text-sm text-slate-500">{selected.medication_name || '—'}</p>
+                  <p className="text-sm text-slate-500">{displayDrug(selected)}</p>
                 </div>
                 <StatusBadge status={getStatus(selected)} />
               </div>
 
               <p className="text-xs text-slate-400">
-                Check-in dispatched{' '}
-                {selected.prescribed_at
-                  ? new Date(selected.prescribed_at).toLocaleString()
+                Saved{' '}
+                {displayDate(selected)
+                  ? new Date(displayDate(selected)).toLocaleString()
                   : '—'}
               </p>
 
