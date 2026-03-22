@@ -3,7 +3,9 @@ import express from 'express'
 import multer from 'multer'
 import { createClient } from '@supabase/supabase-js'
 import { createIntakeRoutes } from './intake.js'
-import { sendTelegramMessage, setTelegramWebhook } from './telegram.js'
+import { sendTelegramMessage, sendTelegramPhoto, setTelegramWebhook } from './telegram.js'
+
+export const demoMessageLog = []
 
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -63,6 +65,16 @@ export function createApp({ aiService }) {
           }
         }
       } else if (!text.startsWith('/')) {
+        // Log inbound message
+        demoMessageLog.push({
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+          direction: 'inbound',
+          text: text,
+          chatId: chatId.toString(),
+          patientName: username ? username : 'Patient'
+        })
+
         // Autonomous Agent Reply Logic for the Hackathon Demo
         const isSevere = text.toLowerCase().match(/(terrible|bad|wrong|dizzy|pain|hurt|worse)/)
         
@@ -71,6 +83,16 @@ export function createApp({ aiService }) {
           botReply = `⚠️ I'm sorry you're feeling that way. I have flagged this as a **High Priority Alert** for Dr. Blair's clinical team. They will review your chart and contact you shortly.`
         }
         await sendTelegramMessage(chatId, botReply)
+
+        // Log outbound reply
+        demoMessageLog.push({
+          id: Date.now() + 1,
+          timestamp: new Date().toISOString(),
+          direction: 'outbound',
+          text: botReply,
+          chatId: chatId.toString(),
+          patientName: username ? username : 'Patient'
+        })
       }
 
       // Default reply for any other messages right now
@@ -79,6 +101,11 @@ export function createApp({ aiService }) {
       console.error('Telegram webhook error:', error)
       response.status(500).json({ error: error.message })
     }
+  })
+
+  // ── Telegram Messages Logs for Demo ──
+  app.get('/api/telegram-logs', (req, res) => {
+    res.json(demoMessageLog)
   })
 
   // ── Telegram Webhook Setup ──
@@ -153,7 +180,30 @@ export function createApp({ aiService }) {
         msg = `👋 Hi ${firstName}, Week ${currentWeek} check-in. Just a system reminder to keep taking your ${drugName} as prescribed. Report any new symptoms below.`
       }
 
-      await sendTelegramMessage(chatData.telegram_chat_id, msg)
+      let photoUrl = null
+      if (rx.simulation?.trajectory) {
+        const labels = rx.simulation.trajectory.map(t => `'Wk ${t.week}'`).join(',')
+        const sysData = rx.simulation.trajectory.map(t => t.systolic).join(',')
+        const diaData = rx.simulation.trajectory.map(t => t.diastolic).join(',')
+        const chartConfig = `{type:'line',data:{labels:[${labels}],datasets:[{label:'Systolic',data:[${sysData}],borderColor:'#ef4444',fill:false},{label:'Diastolic',data:[${diaData}],borderColor:'#3b82f6',fill:false}]},options:{plugins:{title:{display:true,text:'Projected BP Trajectory'}}}}`
+        photoUrl = `https://quickchart.io/chart?c=${encodeURIComponent(chartConfig)}&w=600&h=300&bkg=white`
+      }
+
+      if (photoUrl) {
+        await sendTelegramPhoto(chatData.telegram_chat_id, photoUrl, msg)
+      } else {
+        await sendTelegramMessage(chatData.telegram_chat_id, msg)
+      }
+
+      demoMessageLog.push({
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        direction: 'outbound',
+        text: msg,
+        chatId: chatData.telegram_chat_id,
+        patientName: rx.patient_name !== 'Unknown' ? rx.patient_name : 'Patient',
+        photoUrl: photoUrl
+      })
 
       response.json({ success: true, messagesSent: 1 })
     } catch (error) {
@@ -206,6 +256,15 @@ export function createApp({ aiService }) {
           const msg = `✅ Hi ${firstName}, Dr. Blair just finalized your prescription for ${drugName} and sent it to your pharmacy.\n\nPlease start taking it as directed. I will automatically check back in with you next week to see how you are doing! 💊`
           
           await sendTelegramMessage(intakeData.telegram_chat_id, msg)
+
+          demoMessageLog.push({
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            direction: 'outbound',
+            text: msg,
+            chatId: intakeData.telegram_chat_id,
+            patientName: patientProfile.patientName || 'Patient'
+          })
         }
       } catch (err) {
         console.warn('Initial follow-up Telegram failed:', err)

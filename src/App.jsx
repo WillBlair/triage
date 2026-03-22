@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { SECTION } from './constants/navigation'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
+import FollowUpDashboard from './components/FollowUpDashboard'
 import PatientLibraryDetail from './components/PatientLibraryDetail'
 import PatientLibraryPanel from './components/PatientLibraryPanel'
 import AuthPage, { AUTH_MODE } from './components/AuthPage'
@@ -573,9 +574,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <PlaceholderSection>
-                  Follow-up scheduling, tasks, and patient messaging will live here in a future version.
-                </PlaceholderSection>
+                <FollowUpDashboard />
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (

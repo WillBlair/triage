@@ -33,6 +33,32 @@ export async function sendTelegramMessage(chatId, text, replyMarkup = null) {
 }
 
 /**
+ * Send a photo to a specific Telegram chat ID
+ */
+export async function sendTelegramPhoto(chatId, photoUrl, caption = '') {
+  if (!TELEGRAM_TOKEN) return
+
+  try {
+    const response = await fetch(`${TELEGRAM_API}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        photo: photoUrl,
+        caption: caption,
+        parse_mode: 'HTML'
+      })
+    })
+    
+    if (!response.ok) {
+      console.error('Telegram API photo error:', await response.text())
+    }
+  } catch (err) {
+    console.error('Failed to send Telegram photo:', err)
+  }
+}
+
+/**
  * Sets the webhook URL for the bot
  */
 export async function setTelegramWebhook(url) {
