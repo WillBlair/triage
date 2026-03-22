@@ -167,17 +167,14 @@ function App() {
       }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Only act on genuine first sign-in. Supabase re-emits SIGNED_IN on
-      // tab focus, token refresh, etc. — ignore those to keep the UI stable.
-      if (event === 'SIGNED_IN' && session && !hasSignedIn.current) {
-        hasSignedIn.current = true
-        try {
-          await syncUserData(session)
-        } catch {
-          // Profile fetch failed — still let user through
-        }
-        setView(VIEW.WORKSPACE)
+    // Listen for sign-out events only (e.g. session expired, signed out in another tab).
+    // SIGNED_IN is handled by getSession (page load) and beginFlow (explicit sign-in),
+    // NOT here — onAuthStateChange fires across all tabs and causes cross-tab races
+    // (e.g. email confirmation in another tab would hijack this tab to onboarding).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        hasSignedIn.current = false
+        setView(VIEW.LANDING)
       }
     })
 
@@ -356,10 +353,21 @@ function App() {
     return SECTION_HEADER[activeSection]
   }, [activeSection, librarySelectedEntry])
 
-  const beginFlow = useCallback(() => {
-    // Show loading while onAuthStateChange handler awaits syncUserData
+  const beginFlow = useCallback(async () => {
     setView(VIEW.LOADING)
-  }, [])
+    // Read the session directly — don't rely on onAuthStateChange which
+    // can fire across tabs and cause race conditions.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session && !hasSignedIn.current) {
+      hasSignedIn.current = true
+      try {
+        await syncUserData(session)
+      } catch {
+        // Profile fetch failed — still let user through
+      }
+      setView(VIEW.WORKSPACE)
+    }
+  }, [syncUserData])
 
   if (view === VIEW.LOADING) {
     return (
