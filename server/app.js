@@ -136,6 +136,12 @@ export function createApp({ aiService }) {
       
       const rxId = rx.id
       let currentWeek = demoWeekCounters.get(rxId) || 1
+      
+      // Stop the rapid-fire demo loop after 4 "weeks" so it doesn't spam you forever
+      if (currentWeek > 4) {
+        return response.json({ success: true, messagesSent: 0 })
+      }
+      
       demoWeekCounters.set(rxId, currentWeek + 1)
 
       let msg = ''
