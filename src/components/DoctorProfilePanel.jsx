@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase } from '../services/supabase'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { supabase, uploadDoctorAvatar } from '../services/supabase'
 
 const inputClass =
   'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200'
 
-function AvatarInitials({ name }) {
+function AvatarWithUpload({ name, avatarUrl, onUpload, uploading }) {
+  const fileRef = useRef(null)
   const initials = (name || '')
     .split(/\s+/)
     .filter(Boolean)
@@ -12,10 +13,59 @@ function AvatarInitials({ name }) {
     .map((w) => w[0].toUpperCase())
     .join('')
 
+  const handleClick = () => fileRef.current?.click()
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0]
+    if (file) onUpload(file)
+    e.target.value = ''
+  }
+
   return (
-    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-sm font-bold text-white">
-      {initials || '?'}
-    </span>
+    <div className="flex flex-col items-center gap-1">
+      <button
+        type="button"
+        onClick={handleClick}
+        className="group relative h-16 w-16 shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        aria-label="Upload profile photo"
+      >
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="h-16 w-16 rounded-full object-cover ring-1 ring-slate-200/80"
+          />
+        ) : (
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-600 text-base font-bold text-white">
+            {initials || '?'}
+          </span>
+        )}
+        <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-teal-600 text-white shadow-sm ring-2 ring-white transition group-hover:bg-teal-500">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </span>
+        {uploading && (
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          </span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={handleClick}
+        className="text-[11px] font-medium text-teal-600 transition hover:text-teal-500"
+      >
+        Edit photo
+      </button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        className="hidden"
+      />
+    </div>
   )
 }
 
@@ -294,6 +344,7 @@ export default function DoctorProfilePanel({ doctorProfile, workspaceName, onUpd
   const [saved, setSaved] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [isEmailProvider, setIsEmailProvider] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -302,6 +353,23 @@ export default function DoctorProfilePanel({ doctorProfile, workspaceName, onUpd
       setIsEmailProvider(provider === 'email')
     })
   }, [])
+
+  const handleAvatarUpload = useCallback(async (file) => {
+    const userId = (await supabase.auth.getUser()).data?.user?.id
+    if (!userId) return
+    setUploading(true)
+    try {
+      const publicUrl = await uploadDoctorAvatar(userId, file)
+      if (publicUrl) {
+        const updated = { ...doctorProfile, avatarUrl: publicUrl }
+        onUpdateProfile(updated)
+      }
+    } catch (err) {
+      console.error('Avatar upload failed:', err)
+    } finally {
+      setUploading(false)
+    }
+  }, [doctorProfile, onUpdateProfile])
 
   const patchDraft = useCallback((field, value) => {
     setDraft((prev) => ({ ...prev, [field]: value }))
@@ -365,7 +433,12 @@ export default function DoctorProfilePanel({ doctorProfile, workspaceName, onUpd
           <>
             {/* Read-only view */}
             <div className="flex items-center gap-4">
-              <AvatarInitials name={dp.displayName} />
+              <AvatarWithUpload
+                name={dp.displayName}
+                avatarUrl={dp.avatarUrl}
+                onUpload={handleAvatarUpload}
+                uploading={uploading}
+              />
               <div className="min-w-0">
                 <p className="text-base font-semibold text-slate-900">{dp.displayName || '—'}</p>
                 <p className="text-sm text-slate-500">{dp.specialty || '—'}</p>
