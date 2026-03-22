@@ -138,7 +138,7 @@ function StepBasics({ draft, onDraftChange }) {
           Required identifiers for a draft profile. More detail can come from the chart or patient intake.
         </p>
         <p className="mt-2 text-xs font-medium text-slate-600">
-          Patient name, date of birth, sex, and MRN / identifier are required to continue.
+          Patient name, date of birth, sex, and Telegram handle are required to continue.
         </p>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <div>
@@ -572,7 +572,7 @@ export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profil
   const handleGenerateLink = useCallback(async ({ message, expiryHours }) => {
     setLinkError('')
     if (!isBasicsDraftComplete(draft)) {
-      setLinkError('Complete Basics: patient name, date of birth, sex, and MRN / identifier.')
+      setLinkError('Complete Basics: patient name, date of birth, sex, and Telegram handle.')
       return
     }
     try {
