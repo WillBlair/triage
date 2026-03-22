@@ -17,7 +17,7 @@ import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import ProgressStepper from './components/ProgressStepper'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
-import { getRecommendations, parseDocument, runSimulation } from './services/api'
+import { getRecommendations, parseDocument, runSimulation, savePrescription } from './services/api'
 import { supabase, fetchDoctorProfile, upsertDoctorProfile } from './services/supabase'
 
 function ClinicalDisclaimer() {
@@ -278,6 +278,15 @@ function App() {
         }
         if (event.type === 'result') {
           setSimulation(event.simulation)
+
+          // Auto-save prescription to Supabase for follow-up bot
+          savePrescription({
+            doctorId: currentUserId,
+            patientProfile: profile,
+            selectedDrug,
+            allRecommendations: recommendations,
+            simulation: event.simulation,
+          }).catch((err) => console.warn('Prescription auto-save failed:', err))
         }
       })
     } catch (simulationError) {

@@ -1,17 +1,79 @@
 import cors from 'cors'
 import express from 'express'
 import multer from 'multer'
+import { createClient } from '@supabase/supabase-js'
 import { createIntakeRoutes } from './intake.js'
 
 const upload = multer({ storage: multer.memoryStorage() })
+
+// Server-side Supabase client for prescription persistence
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 export function createApp({ aiService }) {
   const app = express()
 
   app.use(cors())
-  app.use(express.json())
+  app.use(express.json({ limit: '5mb' }))
 
   createIntakeRoutes(app)
+
+  // ── Save prescription data ──
+  app.post('/api/prescriptions', async (request, response, next) => {
+    try {
+      const { doctorId, patientProfile, selectedDrug, allRecommendations, simulation } = request.body ?? {}
+
+      if (!patientProfile || !selectedDrug) {
+        return response.status(400).json({ error: 'Patient profile and selected drug are required.' })
+      }
+
+      if (!supabase) {
+        return response.status(503).json({ error: 'Database not configured.' })
+      }
+
+      const { data, error } = await supabase.from('prescriptions').insert({
+        doctor_id: doctorId || null,
+        patient_name: patientProfile.name || 'Unknown',
+        patient_profile: patientProfile,
+        selected_drug: selectedDrug,
+        all_recommendations: allRecommendations || null,
+        simulation: simulation || null,
+      }).select('id').single()
+
+      if (error) {
+        console.error('Supabase prescriptions insert error:', error)
+        return response.status(500).json({ error: 'Failed to save prescription.' })
+      }
+
+      response.status(201).json({ id: data.id, saved: true })
+    } catch (error) {
+      next(error)
+    }
+  })
+
+  // ── List prescriptions for a doctor ──
+  app.get('/api/prescriptions', async (request, response, next) => {
+    try {
+      if (!supabase) return response.status(503).json({ error: 'Database not configured.' })
+
+      const doctorId = request.query.doctorId
+      let query = supabase
+        .from('prescriptions')
+        .select('id, doctor_id, patient_name, selected_drug, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (doctorId) query = query.eq('doctor_id', doctorId)
+
+      const { data, error } = await query
+      if (error) return response.status(500).json({ error: error.message })
+
+      response.json({ prescriptions: data })
+    } catch (error) {
+      next(error)
+    }
+  })
 
   app.get('/api/health', (_request, response) => {
     response.json({ ok: true })
