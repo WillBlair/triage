@@ -351,6 +351,25 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation, is
             </div>
           )}
         </div>
+
+        <div className="mt-8 grid gap-4 border-t border-dashed border-slate-200 pt-6 sm:grid-cols-2">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Clinician
+            </p>
+            <p className="mt-3 text-sm text-slate-500">Reviewed before external sign-off</p>
+            <div className="mt-8 border-b border-slate-300 pb-1 text-xs text-slate-400">Signature</div>
+            <div className="mt-3 border-b border-slate-300 pb-1 text-xs text-slate-400">Date</div>
+          </div>
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Pharmacy / recipient
+            </p>
+            <p className="mt-3 text-sm text-slate-500">Verification / counseling documented</p>
+            <div className="mt-8 border-b border-slate-300 pb-1 text-xs text-slate-400">Signature</div>
+            <div className="mt-3 border-b border-slate-300 pb-1 text-xs text-slate-400">Date</div>
+          </div>
+        </div>
       </div>
     </div>
   )

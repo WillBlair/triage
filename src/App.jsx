@@ -62,9 +62,9 @@ const SECTION_HEADER = {
     description: '',
   },
   [SECTION.FOLLOW_UP]: {
-    kicker: 'Care plan',
+    kicker: 'Check-ins',
     title: 'Follow up',
-    description: 'Schedule visits, tasks, and reminders in a future release.',
+    description: 'Review patient check-in responses, symptom reports, and emergency flags from Triage.',
   },
   [SECTION.SETTINGS]: {
     kicker: 'Workspace',
