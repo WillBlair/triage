@@ -302,7 +302,6 @@ function StepSendIntake({
           doctorName,
           doctorEmail,
           intakeUrl: intakeLink.url,
-          message,
         }),
       })
       const data = await res.json()
