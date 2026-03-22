@@ -262,6 +262,77 @@ function ConversationModal({ row, onClose }) {
   )
 }
 
+/* ─── Mock prescription/checkin data for demo patients ─── */
+const DEMO_MOCK_DATA = {
+  'demo-m-chen': {
+    id: 'rx-demo-m-chen',
+    patient_name: 'Margaret Chen',
+    medication_name: 'Losartan 50mg',
+    selected_drug: { name: 'Losartan 50mg' },
+    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+    checked_in: true,
+    checkin_responses: [{
+      id: 'cr-demo-m-chen',
+      symptoms_selected: ['dizziness', 'fatigue'],
+      free_text_response: 'I have been feeling lightheaded when I stand up quickly, especially in the morning. The fatigue started on day 2.',
+      emergency_flagged: false,
+      completed_at: new Date(Date.now() - 12 * 3600000).toISOString(),
+      conversation_summary: 'Patient reports dizziness on standing and fatigue beginning day 2 post-prescription. Symptoms are mild and consistent with initial dose adjustment. No emergency flags triggered.',
+    }],
+  },
+  'demo-j-ortiz': {
+    id: 'rx-demo-j-ortiz',
+    patient_name: 'James Ortiz',
+    medication_name: 'Chlorthalidone 12.5mg',
+    selected_drug: { name: 'Chlorthalidone 12.5mg' },
+    created_at: new Date(Date.now() - 3 * 3600000).toISOString(),
+    checked_in: false,
+    checkin_responses: [],
+  },
+  'demo-i-torres': {
+    id: 'rx-demo-i-torres',
+    patient_name: 'Isabella Torres',
+    medication_name: 'Atorvastatin 20mg',
+    selected_drug: { name: 'Atorvastatin 20mg' },
+    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+    checked_in: true,
+    checkin_responses: [{
+      id: 'cr-demo-i-torres',
+      symptoms_selected: ['nausea', 'headache', 'rash'],
+      free_text_response: 'Started feeling chest tightness and difficulty breathing beginning day 2 post-prescription. Symptoms worsened by evening.',
+      emergency_flagged: true,
+      completed_at: new Date(Date.now() - 6 * 3600000).toISOString(),
+      conversation_summary: 'Patient reported chest tightness and difficulty breathing beginning day 2 post-prescription. Symptoms worsened by evening. Emergency flag triggered. Care team notified.',
+    }],
+  },
+  'demo-a-patel': {
+    id: 'rx-demo-a-patel',
+    patient_name: 'Anil Patel',
+    medication_name: 'Amlodipine 5mg',
+    selected_drug: { name: 'Amlodipine 5mg' },
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    checked_in: true,
+    checkin_responses: [{
+      id: 'cr-demo-a-patel',
+      symptoms_selected: ['none'],
+      free_text_response: 'Feeling great, no side effects at all. Blood pressure has been more stable.',
+      emergency_flagged: false,
+      completed_at: new Date(Date.now() - 1.5 * 86400000).toISOString(),
+      conversation_summary: 'Patient reports no side effects and improved blood pressure stability since starting Amlodipine 5mg. No concerns raised.',
+    }],
+  },
+  'demo-s-okonkwo': {
+    id: 'rx-demo-s-okonkwo',
+    patient_name: 'Sarah Okonkwo',
+    medication_name: 'Spironolactone 25mg',
+    selected_drug: { name: 'Spironolactone 25mg' },
+    created_at: new Date(Date.now() - 5 * 3600000).toISOString(),
+    checked_in: false,
+    checkin_responses: [],
+  },
+  // demo-l-reyes has no mock data — shows as "Pending" (no prescription yet)
+}
+
 /* ═══════════════════════════════════════════════════
    Main Dashboard — shows ALL patients, joined with
    prescriptions/checkin data where available
@@ -317,9 +388,13 @@ export default function FollowUpDashboard({ doctorId }) {
     const merged = allPatients.map((patient) => {
       const name = patient.profile?.patientName || ''
       const key = name.toLowerCase().trim()
-      const rx = rxByName[key] || null
-      // Mark this prescription as claimed so we don't duplicate it
-      if (rx) delete rxByName[key]
+      // Real prescription from Supabase takes priority, then demo mock data
+      let rx = rxByName[key] || null
+      if (rx) {
+        delete rxByName[key]
+      } else if (DEMO_MOCK_DATA[patient.id]) {
+        rx = DEMO_MOCK_DATA[patient.id]
+      }
 
       return {
         id: patient.id,
