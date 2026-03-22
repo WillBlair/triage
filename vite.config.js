@@ -12,4 +12,12 @@ export default defineConfig({
       '/api': 'http://localhost:8787',
     },
   },
+  // Same proxy for `vite preview` so /api/intake-tokens works after build.
+  preview: {
+    host: true,
+    strictPort: true,
+    proxy: {
+      '/api': 'http://localhost:8787',
+    },
+  },
 })
