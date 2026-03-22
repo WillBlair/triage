@@ -10,6 +10,7 @@ import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
+import ProgressStepper from './components/ProgressStepper'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
 
@@ -275,6 +276,8 @@ function App() {
             />
             <main className="flex min-h-0 min-w-0 flex-1 flex-col border-l border-slate-200/80 bg-white">
               <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5 lg:pl-10 lg:pr-12">
+          <ProgressStepper activeSection={activeSection} />
+
           {error ? (
             <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
               {error}
