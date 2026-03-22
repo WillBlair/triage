@@ -73,6 +73,7 @@ function App() {
   const [recommendations, setRecommendations] = useState(null)
   const [selectedDrug, setSelectedDrug] = useState(null)
   const [simulation, setSimulation] = useState(null)
+  const [thinkingText, setThinkingText] = useState('')
   const [error, setError] = useState('')
   const [isParsing, setIsParsing] = useState(false)
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
@@ -140,11 +141,15 @@ function App() {
     }
 
     setSimulation(null)
+    setThinkingText('')
     setError('')
     setIsRunningSimulation(true)
 
     try {
       await runSimulation(profile, selectedDrug, (event) => {
+        if (event.type === 'thinking') {
+          setThinkingText((prev) => prev + event.chunk)
+        }
         if (event.type === 'result') {
           setSimulation(event.simulation)
         }
@@ -299,6 +304,7 @@ function App() {
                   selectedDrug={selectedDrug}
                   simulation={simulation}
                   isRunning={isRunningSimulation}
+                  thinkingText={thinkingText}
                   onRun={handleRunSimulation}
                   onContinueToPrescribe={() => setActiveSection(SECTION.PRESCRIPTION)}
                 />

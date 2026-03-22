@@ -1,5 +1,32 @@
+import { useEffect, useRef } from 'react'
 import TimelineChart from './TimelineChart'
 
+const FLAG_STYLE = {
+  critical: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', dot: 'bg-rose-500' },
+  warning:  { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', dot: 'bg-amber-500' },
+  info:     { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-800', dot: 'bg-teal-500' },
+}
+
+function ThinkingStream({ text }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
+  }, [text])
+
+  if (!text) return null
+  return (
+    <div
+      ref={ref}
+      className="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm leading-relaxed text-teal-900 max-h-28 overflow-y-auto"
+    >
+      <span className="mr-2 text-[10px] font-semibold uppercase tracking-widest text-teal-600">
+        Analyzing
+      </span>
+      {text}
+      <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-teal-500 align-middle" />
+    </div>
+  )
+}
 const RISK_TIER = {
   low: {
     label: 'Low',
@@ -37,6 +64,7 @@ function SimulationPanel({
   selectedDrug,
   simulation,
   isRunning,
+  thinkingText = '',
   onRun,
   onContinueToPrescribe,
 }) {
@@ -51,6 +79,7 @@ function SimulationPanel({
   const riskMaxBar = Math.max(1, rawRiskMax)
   const effects = simulation?.sideEffects || []
   const takeaways = simulation?.takeaways || []
+  const flags = simulation?.flags || []
 
   const regimenLabel = selectedDrug
     ? `${selectedDrug.name} · ${selectedDrug.dose}`
@@ -79,6 +108,26 @@ function SimulationPanel({
       </div>
 
       <div className={`grid gap-4 ${embedded ? 'mt-5' : 'mt-6'}`}>
+        {(isRunning || thinkingText) && !simulation && (
+          <ThinkingStream text={thinkingText} />
+        )}
+
+        {flags.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {flags.map((flag, i) => {
+              const s = FLAG_STYLE[flag.type] || FLAG_STYLE.info
+              return (
+                <div key={i} className={`flex items-start gap-3 rounded-2xl border ${s.border} ${s.bg} px-4 py-3`}>
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
+                  <div>
+                    <p className={`text-xs font-semibold ${s.text}`}>{flag.label}</p>
+                    {flag.detail && <p className={`mt-0.5 text-xs ${s.text} opacity-80`}>{flag.detail}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
         <TimelineChart
           simulation={simulation}
           isRunning={isRunning}
