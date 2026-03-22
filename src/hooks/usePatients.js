@@ -6,6 +6,11 @@ import { DEMO_PATIENTS } from '../constants/demoPatients'
  * Shared hook — used by both Patient Library and Follow Up Dashboard.
  * Fetches patients from Supabase, merges with demo patients,
  * and subscribes to Realtime for live updates.
+ *
+ * Supabase `patients` table schema:
+ *   id, user_id, name, dob, sex, mrn, concerns (text[]), notes (text),
+ *   email, phone, chief_concern, profile (jsonb),
+ *   created_at, updated_at
  */
 export default function usePatients(doctorId) {
   const [dbPatients, setDbPatients] = useState([])
@@ -18,11 +23,10 @@ export default function usePatients(doctorId) {
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (doctorId) query = query.eq('doctor_id', doctorId)
+      if (doctorId) query = query.eq('user_id', doctorId)
 
       const { data, error } = await query
       if (error) {
-        // Table may not exist yet — fail silently
         console.warn('[usePatients] fetch error:', error.message)
         setDbPatients([])
       } else {
@@ -47,13 +51,13 @@ export default function usePatients(doctorId) {
   const savedPatients = useMemo(() => {
     return dbPatients.map((row) => ({
       id: row.id,
-      chartLabel: row.patient_name,
+      chartLabel: row.name || 'Patient',
       avatarSrc: '',
       profile: {
-        patientName: row.patient_name || '',
-        age: row.profile?.age ?? null,
-        sex: row.profile?.sex || row.sex || '',
-        chiefConcern: row.profile?.chiefConcern || row.chief_concern || '',
+        patientName: row.name || '',
+        age: row.profile?.age ?? (row.dob ? Math.floor((Date.now() - new Date(row.dob).getTime()) / (365.25 * 24 * 3600_000)) : null),
+        sex: row.sex || row.profile?.sex || '',
+        chiefConcern: row.chief_concern || (row.concerns || []).join(', ') || row.profile?.chiefConcern || '',
         summary: row.profile?.summary || '',
         diagnoses: row.profile?.diagnoses || [],
         medications: row.profile?.medications || [],
@@ -83,24 +87,46 @@ export default function usePatients(doctorId) {
  * Called from AddPatientIntake when a new patient is merged.
  */
 export async function savePatientToSupabase(doctorId, entry) {
-  const profile = entry.profile || {}
+  const p = entry.profile || {}
+
+  const row = {
+    user_id: doctorId || null,
+    name: p.patientName || 'Unknown',
+    dob: p.dob || null,
+    sex: p.sex || null,
+    mrn: p.mrn || null,
+    concerns: p.chiefConcern ? p.chiefConcern.split(/[;,]/).map((s) => s.trim()).filter(Boolean) : [],
+    notes: p.summary || '',
+  }
+
+  // Add optional columns if they exist on the table (added via ALTER TABLE)
+  const optionalFields = {
+    email: p.email || null,
+    phone: p.phone || null,
+    chief_concern: p.chiefConcern || null,
+    profile: p,
+  }
+
   const { error, data } = await supabase
     .from('patients')
-    .insert({
-      doctor_id: doctorId || null,
-      patient_name: profile.patientName || 'Unknown',
-      email: profile.email || null,
-      phone: profile.phone || null,
-      mrn: profile.mrn || null,
-      dob: profile.dob || null,
-      sex: profile.sex || null,
-      chief_concern: profile.chiefConcern || null,
-      profile: profile, // full profile as JSONB
-    })
+    .insert({ ...row, ...optionalFields })
     .select('id')
     .single()
 
   if (error) {
+    // If optional columns don't exist, retry without them
+    if (error.code === 'PGRST204' || error.message?.includes('column')) {
+      const { error: retryError, data: retryData } = await supabase
+        .from('patients')
+        .insert(row)
+        .select('id')
+        .single()
+      if (retryError) {
+        console.error('[savePatientToSupabase] insert error:', retryError)
+        return null
+      }
+      return retryData?.id ?? null
+    }
     console.error('[savePatientToSupabase] insert error:', error)
     return null
   }
