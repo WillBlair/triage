@@ -97,42 +97,37 @@ export function createApp({ aiService }) {
     try {
       if (!supabase) return response.status(503).json({ error: 'Database not configured.' })
 
-      // Fetch recent prescriptions
+      // Fetch the single most recent prescription
       const { data: prescriptions, error: rxError } = await supabase
         .from('prescriptions')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(1)
       
       if (rxError) throw rxError
 
-      // Fetch intake tokens to get telegram_chat_ids
-      const { data: intakeTokens, error: tokenError } = await supabase
+      // Fetch the single most recent telegram chat ID
+      const { data: chatData, error: tokenError } = await supabase
         .from('intake_tokens')
-        .select('patient, telegram_chat_id')
+        .select('telegram_chat_id')
         .not('telegram_chat_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
 
-      if (tokenError) throw tokenError
-
-      let messagesSent = 0
-      for (const rx of prescriptions) {
-        // Match the prescription to the patient's Telegram ID via name
-        const match = intakeTokens?.find(t => t.patient?.name === rx.patient_name)
-        if (!match || !match.telegram_chat_id) continue
-
-        // Send check-in message
-        const drugName = rx.selected_drug?.name || 'medication'
-        const firstName = rx.patient_name.split(' ')[0]
-        
-        // In a full production app, you would pass `rx.simulation` to Claude to generate
-        // a highly specific, side-effect-aware follow-up question.
-        const msg = `👋 Hi ${firstName}, it's your weekly check-in for your ${drugName} prescription.\n\nHow are you feeling this week? Any side effects or unexpected symptoms? Just reply here and Dr. Blair's team will review it.`
-
-        await sendTelegramMessage(match.telegram_chat_id, msg)
-        messagesSent++
+      if (prescriptions.length === 0 || !chatData?.telegram_chat_id) {
+        return response.json({ success: true, messagesSent: 0 })
       }
 
-      response.json({ success: true, messagesSent })
+      const rx = prescriptions[0]
+      const drugName = rx.selected_drug?.name || 'medication'
+      const firstName = rx.patient_name.split(' ')[0]
+      
+      const msg = `👋 Hi ${firstName}, it's your weekly check-in for your ${drugName} prescription.\n\nHow are you feeling this week? Any side effects or unexpected symptoms? Just reply here and Dr. Blair's team will review it.`
+
+      await sendTelegramMessage(chatData.telegram_chat_id, msg)
+
+      response.json({ success: true, messagesSent: 1 })
     } catch (error) {
       console.error('Follow-up cron error:', error)
       response.status(500).json({ error: error.message })
@@ -167,13 +162,12 @@ export function createApp({ aiService }) {
       }
 
       // Hackathon Flow: Instantly send Telegram message!
-      // Grab the most recent intake_token that has a telegram_chat_id matching this patient name
+      // Grab the most recent intake_token that has a telegram_chat_id
       try {
         const { data: intakeData } = await supabase
           .from('intake_tokens')
           .select('telegram_chat_id')
           .not('telegram_chat_id', 'is', null)
-          .eq('patient->>name', patientProfile.name || '')
           .order('created_at', { ascending: false })
           .limit(1)
           .single()

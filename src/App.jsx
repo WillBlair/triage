@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { SECTION } from './constants/navigation'
+import { DEFAULT_INTAKE_FORM } from './constants/intake'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
 import PatientLibraryDetail from './components/PatientLibraryDetail'
@@ -99,6 +100,18 @@ function App() {
   const [onboardingComplete, setOnboardingComplete] = useState(false)
   const [doctorProfile, setDoctorProfile] = useState(null)
   const [workspaceName, setWorkspaceName] = useState('')
+
+  // ── Rapid Fire Hackathon Demo Follow-Up Loop ──
+  useEffect(() => {
+    let intervalId
+    if (isConfirmed) {
+      intervalId = setInterval(() => {
+        // Call the cron route directly from the frontend to trigger a Telegram message
+        fetch('/api/cron/weekly-followup').catch(err => console.error('Rapid fire follow-up failed:', err))
+      }, 20000)
+    }
+    return () => clearInterval(intervalId)
+  }, [isConfirmed])
   const [currentUserId, setCurrentUserId] = useState(null)
 
   // When a different user signs in, reset onboarding so they get their own experience
