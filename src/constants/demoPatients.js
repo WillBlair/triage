@@ -8,7 +8,7 @@ export const DEMO_PATIENTS = [
   {
     id: 'demo-m-chen',
     chartLabel: 'Demo chart — M. Chen',
-    avatarSrc: '/demo/avatars/patient-01.svg',
+    avatarSrc: '/demo/avatars/patient-01.jpg',
     profile: {
       patientName: 'Margaret Chen',
       age: 68,
@@ -68,7 +68,7 @@ export const DEMO_PATIENTS = [
   {
     id: 'demo-j-ortiz',
     chartLabel: 'Demo chart — J. Ortiz',
-    avatarSrc: '/demo/avatars/patient-02.svg',
+    avatarSrc: '/demo/avatars/patient-02.jpg',
     profile: {
       patientName: 'James Ortiz',
       age: 54,
@@ -126,11 +126,11 @@ export const DEMO_PATIENTS = [
     },
   },
   {
-    id: 'demo-r-kim',
-    chartLabel: 'Demo chart — R. Kim',
-    avatarSrc: '/demo/avatars/patient-03.svg',
+    id: 'demo-i-torres',
+    chartLabel: 'Demo chart — I. Torres',
+    avatarSrc: '/demo/avatars/patient-03.jpg',
     profile: {
-      patientName: 'Rachel Kim',
+      patientName: 'Isabella Torres',
       age: 41,
       sex: 'F',
       chiefConcern: 'Lightheaded standing; BP drops on home cuff',
@@ -187,7 +187,7 @@ export const DEMO_PATIENTS = [
   {
     id: 'demo-a-patel',
     chartLabel: 'Demo chart — A. Patel',
-    avatarSrc: '/demo/avatars/patient-04.svg',
+    avatarSrc: '/demo/avatars/patient-04.jpg',
     profile: {
       patientName: 'Anil Patel',
       age: 72,
@@ -246,7 +246,7 @@ export const DEMO_PATIENTS = [
   {
     id: 'demo-s-okonkwo',
     chartLabel: 'Demo chart — S. Okonkwo',
-    avatarSrc: '/demo/avatars/patient-05.svg',
+    avatarSrc: '/demo/avatars/patient-05.jpg',
     profile: {
       patientName: 'Sarah Okonkwo',
       age: 35,
@@ -306,7 +306,7 @@ export const DEMO_PATIENTS = [
   {
     id: 'demo-l-reyes',
     chartLabel: 'Demo chart — L. Reyes',
-    avatarSrc: '/demo/avatars/patient-06.svg',
+    avatarSrc: '/demo/avatars/patient-06.jpg',
     profile: {
       patientName: 'Luis Reyes',
       age: 59,
