@@ -82,7 +82,7 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
   return lines.join('\n')
 }
 
-export default function PrescribeSummary({ profile, selectedDrug, simulation }) {
+export default function PrescribeSummary({ profile, selectedDrug, simulation, isConfirmed, isConfirming, onConfirm, onGoToFollowUp }) {
   const [copied, setCopied] = useState(false)
   const [pharmacyId, setPharmacyId] = useState(DEMO_PHARMACIES[0].id)
 
@@ -288,6 +288,68 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
             Draft currently addressed to <span className="font-semibold">{selectedPharmacy.name}</span>
             <span className="text-slate-500"> — {selectedPharmacy.detail}</span>.
           </div>
+        </div>
+
+        {/* Confirm / Send section */}
+        <div className="mt-8 border-t border-slate-100 pt-6">
+          {!isConfirmed ? (
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+              <p className="text-sm text-slate-600">
+                Review the draft above, then send to <span className="font-semibold text-slate-800">{selectedPharmacy.name}</span>.
+              </p>
+              <button
+                type="button"
+                onClick={() => onConfirm?.(selectedPharmacy)}
+                disabled={isConfirming}
+                className="shrink-0 rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isConfirming ? 'Sending\u2026' : 'Confirm & send to pharmacy'}
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-emerald-900">Prescription sent (demo)</h3>
+                  <p className="mt-1 text-sm text-emerald-800">
+                    Handoff for <span className="font-semibold">{profile?.patientName || 'patient'}</span> has been
+                    simulated as sent to <span className="font-semibold">{selectedPharmacy.name}</span>.
+                  </p>
+                  <dl className="mt-3 space-y-1 text-sm text-emerald-700">
+                    <div className="flex gap-2">
+                      <dt className="text-emerald-600">Pharmacy:</dt>
+                      <dd>{selectedPharmacy.name} — {selectedPharmacy.detail}</dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-emerald-600">Medication:</dt>
+                      <dd>{selectedDrug?.name} {selectedDrug?.dose ? `(${selectedDrug.dose})` : ''}</dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-emerald-600">Status:</dt>
+                      <dd className="font-semibold">Delivered (simulated)</dd>
+                    </div>
+                  </dl>
+                  <p className="mt-3 text-xs text-emerald-600">
+                    In production this would transmit via eRx / NCPDP SCRIPT. This demo only saves a record.
+                  </p>
+                  {onGoToFollowUp ? (
+                    <button
+                      type="button"
+                      onClick={onGoToFollowUp}
+                      className="mt-4 rounded-xl border border-emerald-300 bg-white px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+                    >
+                      View in follow-up
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
