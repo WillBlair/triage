@@ -1,4 +1,3 @@
-import { PDFParse } from 'pdf-parse'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || ''
@@ -204,16 +203,48 @@ export function createAiService() {
 
   return {
     async parseDocument(fileBuffer) {
-      const parser = new PDFParse({ data: fileBuffer })
+      // Send the PDF directly to Claude — no local parsing needed
+      const base64Pdf = Buffer.from(fileBuffer).toString('base64')
 
-      try {
-        const parsed = await parser.getText()
-        return askClaudeJson(PARSE_SYSTEM, {
-          documentText: parsed.text.slice(0, 120000),
-        })
-      } finally {
-        await parser.destroy()
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1800,
+          system: PARSE_SYSTEM,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'document',
+                source: {
+                  type: 'base64',
+                  media_type: 'application/pdf',
+                  data: base64Pdf,
+                },
+              },
+              {
+                type: 'text',
+                text: 'Parse this clinical document and return the structured JSON profile.',
+              },
+            ],
+          }],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error((await response.text()) || 'Claude PDF parse request failed.')
       }
+
+      const data = await response.json()
+      const raw = data.content?.[0]?.text || '{}'
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+      return JSON.parse(cleaned)
     },
     async createRecommendations(profile) {
       const raw = await askClaudeJson(RECOMMEND_SYSTEM, profile, 1000)
