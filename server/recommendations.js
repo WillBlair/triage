@@ -67,10 +67,11 @@ Use the patient's actual data:
 - Flag ACE-I allergy if present — never recommend ACE inhibitors
 - Include hyperkalemia risk if ARB is selected and patient has concurrent K+ monitoring needs
 - Target range should reflect clinical goal (typically 120-130 systolic for hypertension with end-organ damage)
+- Ensure the trajectory is clinically logical (e.g., if reducing a BP med dose to treat orthostatic hypotension, BP might rise slightly; if adding a med, BP should drop). Explain this explicitly in the summary.
 
 Return JSON with this exact shape:
 {
-  "summary": "2-3 sentence clinical narrative specific to this patient and drug",
+  "summary": "2-3 sentence clinical narrative explicitly naming the patient. Explain exactly why their trajectory is moving in the charted direction with this specific drug.",
   "projectedMetric": "Systolic BP (mmHg)",
   "targetRange": { "low": 120, "high": 130 },
   "weeks": [

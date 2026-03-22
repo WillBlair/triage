@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import ProfileCard from './ProfileCard'
+import { savePatientToSupabase } from '../hooks/usePatients'
 
 const STEPS = [
   { id: 'basics', label: 'Basics' },
@@ -571,7 +572,7 @@ function StepChartMerge({
 
 /* ── Main component ── */
 
-export default function AddPatientIntake({ doctorEmail, doctorName, ...profileCardProps }) {
+export default function AddPatientIntake({ doctorEmail, doctorName, doctorId, onMergePatient, ...profileCardProps }) {
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState({ name: '', dob: '', sex: '', mrn: '', email: '', phone: '', concerns: [], notes: '' })
   const [intakeSections, setIntakeSections] = useState(() => {
@@ -658,10 +659,51 @@ export default function AddPatientIntake({ doctorEmail, doctorName, ...profileCa
   }, [intakeLink])
 
   const handleMerge = useCallback(() => {
-    // In a real app, this would merge patient-submitted data into the parsed profile.
-    // For now, mark as merged.
     setMerged(true)
-  }, [])
+
+    // Build a patient entry in the same format as DEMO_PATIENTS
+    const parsedProfile = profileCardProps.profile
+    const age = draft.dob
+      ? Math.floor((Date.now() - new Date(draft.dob).getTime()) / (365.25 * 24 * 3600_000))
+      : null
+
+    const entry = {
+      id: `patient-${Date.now()}`,
+      chartLabel: `${draft.name}`,
+      avatarSrc: '',
+      profile: {
+        patientName: draft.name || parsedProfile?.patientName || 'Unknown',
+        age: age ?? parsedProfile?.age ?? null,
+        sex: draft.sex || parsedProfile?.sex || '',
+        chiefConcern: (draft.concerns || []).join(', ') || parsedProfile?.chiefConcern || '',
+        summary: parsedProfile?.summary || '',
+        diagnoses: parsedProfile?.diagnoses || [],
+        medications: parsedProfile?.medications || [],
+        allergies: parsedProfile?.allergies || [],
+        vitals: parsedProfile?.vitals || [],
+        labs: parsedProfile?.labs || [],
+        sourceHighlights: parsedProfile?.sourceHighlights || [],
+        // Extra fields from draft
+        email: draft.email || '',
+        phone: draft.phone || '',
+        mrn: draft.mrn || '',
+        dob: draft.dob || '',
+      },
+    }
+
+    // Merge intake submission data if available
+    if (intakeSubmission?.data) {
+      const sub = intakeSubmission.data
+      if (sub.medications) entry.profile.medications = [...entry.profile.medications, sub.medications]
+      if (sub.allergies) entry.profile.allergies = [...entry.profile.allergies, sub.allergies]
+      if (sub.symptoms?.length) entry.profile.chiefConcern += (entry.profile.chiefConcern ? '; ' : '') + sub.symptoms.join(', ')
+    }
+
+    // Save to Supabase so both Patient Library and Follow Up see this patient
+    savePatientToSupabase(doctorId, entry).catch(() => {})
+
+    if (onMergePatient) onMergePatient(entry)
+  }, [draft, intakeSubmission, profileCardProps.profile, onMergePatient, doctorId])
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1))
   const back = () => setStep((s) => Math.max(s - 1, 0))

@@ -111,7 +111,22 @@ export async function handleFreeText(userId, freeText) {
   sessions.set(userId, session);
 
   const emergencyFlag = shouldFlag(session.symptoms, freeText);
-  const claudeResponse = await buildClaudeResponse(session.symptoms, freeText);
+
+  const [claudeResponse] = await Promise.all([
+    buildClaudeResponse(session.symptoms, freeText),
+  ]);
+
+  session.lastClaudeResponse = claudeResponse;
+  sessions.set(userId, session);
+
+  await logSession({
+    userId,
+    symptoms: session.symptoms,
+    freeText,
+    emergencyFlag,
+    prescriptionId: session.prescriptionId ?? null,
+    claudeResponse,
+  });
 
   return {
     claudeResponse,
@@ -141,6 +156,7 @@ export async function finalizeSession(userId, lastFreeText = "") {
     freeText: lastFreeText,
     emergencyFlag: shouldFlag(session.symptoms, lastFreeText),
     prescriptionId: session.prescriptionId ?? null,
+    claudeResponse: session.lastClaudeResponse,
   });
 
   return { closing: CLOSING_MESSAGE };

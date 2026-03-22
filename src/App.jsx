@@ -7,12 +7,12 @@ import PatientLibraryPanel from './components/PatientLibraryPanel'
 import AuthPage, { AUTH_MODE } from './components/AuthPage'
 import LandingPage from './components/LandingPage'
 import Onboarding from './components/Onboarding'
-import PatientProfile from './components/PatientProfile'
 import DoctorProfilePanel from './components/DoctorProfilePanel'
-import FollowUpPanel from './components/FollowUpPanel'
 import PlaceholderSection from './components/PlaceholderSection'
+import FollowUpDashboard from './components/FollowUpDashboard'
 import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
+import ErrorBoundary from './components/ErrorBoundary'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import ProgressStepper from './components/ProgressStepper'
@@ -51,7 +51,7 @@ const SECTION_HEADER = {
   },
   [SECTION.SIMULATION]: {
     kicker: 'Monitor',
-    title: 'Monitoring & follow-up scenario',
+    title: 'Monitoring scenario',
     description:
       'Generate an educational multi-week scenario for the selected contrast option and review the projected trajectory in the chart.',
   },
@@ -61,9 +61,9 @@ const SECTION_HEADER = {
     description: '',
   },
   [SECTION.FOLLOW_UP]: {
-    kicker: 'Check-ins',
+    kicker: 'Care plan',
     title: 'Follow up',
-    description: 'Review patient check-in responses, symptom reports, and emergency flags from Triage.',
+    description: 'Check-in status and real-time patient responses.',
   },
   [SECTION.SETTINGS]: {
     kicker: 'Workspace',
@@ -82,7 +82,14 @@ const VIEW = { LOADING: 'loading', LANDING: 'landing', AUTH: 'auth', EMAIL_CONFI
 function App() {
   const [view, setView] = useState(VIEW.LOADING)
   const [authMode, setAuthMode] = useState(AUTH_MODE.SIGN_IN)
-  const [activeSection, setActiveSection] = useState(SECTION.ADD_PATIENT)
+  const [activeSection, setActiveSectionRaw] = useState(() => {
+    const saved = sessionStorage.getItem('triage_active_section')
+    return saved && Object.values(SECTION).includes(saved) ? saved : SECTION.ADD_PATIENT
+  })
+  const setActiveSection = useCallback((section) => {
+    setActiveSectionRaw(section)
+    sessionStorage.setItem('triage_active_section', section)
+  }, [])
   const [fileName, setFileName] = useState('')
   const [profile, setProfile] = useState(null)
   const [recommendations, setRecommendations] = useState(null)
@@ -108,14 +115,20 @@ function App() {
     const userId = session.user.id
     setCurrentUserId(userId)
     setDoctorEmail(session.user.email || '')
-    const saved = await fetchDoctorProfile(userId)
-    if (saved) {
-      setDoctorProfile(saved.doctorProfile)
-      setWorkspaceName(saved.workspaceName)
-      setOnboardingComplete(saved.onboarded)
-    } else {
-      setDoctorProfile(null)
-      setWorkspaceName('')
+    try {
+      const saved = await fetchDoctorProfile(userId)
+      if (saved) {
+        setDoctorProfile(saved.doctorProfile)
+        setWorkspaceName(saved.workspaceName)
+        setOnboardingComplete(saved.onboarded)
+      } else {
+        setDoctorProfile(null)
+        setWorkspaceName('')
+        setOnboardingComplete(false)
+      }
+    } catch (err) {
+      console.error('Failed to load doctor profile:', err)
+      // Treat as new user so the app doesn't get stuck
       setOnboardingComplete(false)
     }
   }, [])
@@ -127,28 +140,41 @@ function App() {
     const isEmailConfirmation =
       hash.includes('type=signup') || hash.includes('type=email')
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // If this is an email confirmation, block onAuthStateChange from racing
+    // by marking hasSignedIn immediately. We'll reset it after signOut.
+    if (isEmailConfirmation) {
+      hasSignedIn.current = true
+    }
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (isEmailConfirmation) {
-        // User clicked the confirmation link — sign them out so they must log in explicitly
-        supabase.auth.signOut()
+        await supabase.auth.signOut()
+        // Clear the hash so the next sign-in isn't mistaken for confirmation
+        window.history.replaceState(null, '', window.location.pathname)
+        // Reset so the real sign-in via onAuthStateChange will work
+        hasSignedIn.current = false
         setView(VIEW.EMAIL_CONFIRMED)
       } else if (session) {
         hasSignedIn.current = true
-        syncUserData(session)
+        try {
+          await syncUserData(session)
+        } catch {
+          // Profile fetch failed — still let user through
+        }
         setView(VIEW.WORKSPACE)
       } else {
         setView(VIEW.LANDING)
       }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only act on genuine first sign-in. Supabase re-emits SIGNED_IN on
-      // tab focus, token refresh, etc. — ignore those to keep the UI stable.
-      if (event === 'SIGNED_IN' && session && !hasSignedIn.current) {
-        hasSignedIn.current = true
-        syncUserData(session)
-        setView(VIEW.WORKSPACE)
-        setActiveSection(SECTION.ADD_PATIENT)
+    // Listen for sign-out events only (e.g. session expired, signed out in another tab).
+    // SIGNED_IN is handled by getSession (page load) and beginFlow (explicit sign-in),
+    // NOT here — onAuthStateChange fires across all tabs and causes cross-tab races
+    // (e.g. email confirmation in another tab would hijack this tab to onboarding).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        hasSignedIn.current = false
+        setView(VIEW.LANDING)
       }
     })
 
@@ -182,6 +208,8 @@ function App() {
 
   const returnToLanding = useCallback(async () => {
     await supabase.auth.signOut()
+    hasSignedIn.current = false
+    sessionStorage.removeItem('triage_active_section')
     resetWizard()
     setView(VIEW.LANDING)
   }, [resetWizard])
@@ -234,6 +262,9 @@ function App() {
       })
     }
   }, [currentUserId, workspaceName])
+
+  // No-op: patients are now saved directly to Supabase from AddPatientIntake
+  const handleMergePatient = useCallback(() => {}, [])
 
   const handleSelectFile = async (file) => {
     setFileName(file.name)
@@ -291,7 +322,7 @@ function App() {
     }
   }
 
-  const handleConfirmPrescription = async () => {
+  const handleConfirmPrescription = async (pharmacy) => {
     setIsConfirming(true)
     try {
       await savePrescription({
@@ -301,11 +332,11 @@ function App() {
         allRecommendations: recommendations,
         simulation,
       })
-      setIsConfirmed(true)
     } catch (err) {
-      console.warn('Prescription save failed:', err)
-      setIsConfirmed(true)
+      console.warn('Prescription save failed (demo continues):', err)
     } finally {
+      // Always mark confirmed for the demo — even if Supabase table doesn't exist
+      setIsConfirmed(true)
       setIsConfirming(false)
     }
   }
@@ -319,13 +350,32 @@ function App() {
           'Review this chart snapshot. When you are ready, request AI treatment options to compare regimens.',
       }
     }
-    return SECTION_HEADER[activeSection]
-  }, [activeSection, librarySelectedEntry])
+    
+    const meta = { ...SECTION_HEADER[activeSection] }
+    if (activeSection === SECTION.SIMULATION && profile?.patientName) {
+      const firstName = profile.patientName.split(' ')[0]
+      meta.title = `Projected outlook for ${firstName}`
+      meta.description = `Generate a customized multi-week predictive scenario detailing exactly how ${firstName} will respond to the selected regimen.`
+    }
+    
+    return meta
+  }, [activeSection, librarySelectedEntry, profile])
 
-  const beginFlow = useCallback(() => {
-    setView(VIEW.WORKSPACE)
-    setActiveSection(SECTION.ADD_PATIENT)
-  }, [])
+  const beginFlow = useCallback(async () => {
+    setView(VIEW.LOADING)
+    // Read the session directly — don't rely on onAuthStateChange which
+    // can fire across tabs and cause race conditions.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session && !hasSignedIn.current) {
+      hasSignedIn.current = true
+      try {
+        await syncUserData(session)
+      } catch {
+        // Profile fetch failed — still let user through
+      }
+      setView(VIEW.WORKSPACE)
+    }
+  }, [syncUserData])
 
   if (view === VIEW.LOADING) {
     return (
@@ -490,6 +540,7 @@ function App() {
                     : 'overflow-y-auto overscroll-contain px-6 py-5 sm:py-6'
               }`}
             >
+              <ErrorBoundary>
               {activeSection === SECTION.ADD_PATIENT ? (
                 <AddPatientIntake
                   fileName={fileName}
@@ -500,6 +551,8 @@ function App() {
                   error=""
                   doctorEmail={doctorEmail}
                   doctorName={doctorProfile?.displayName || ''}
+                  doctorId={currentUserId}
+                  onMergePatient={handleMergePatient}
                 />
               ) : null}
 
@@ -515,7 +568,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.PROFILES && !librarySelectedEntry ? (
-                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} />
+                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} doctorId={currentUserId} />
               ) : null}
 
               {activeSection === SECTION.RECOMMENDATIONS ? (
@@ -537,6 +590,7 @@ function App() {
                   selectedDrug={selectedDrug}
                   simulation={simulation}
                   isRunning={isRunningSimulation}
+                  patientName={profile?.patientName || profile?.name}
                   onRun={handleRunSimulation}
                 />
               ) : null}
@@ -547,8 +601,10 @@ function App() {
                     profile={profile}
                     selectedDrug={selectedDrug}
                     simulation={simulation}
-                    patientEmail={intakeForm.patientEmail}
-                    onNavigateToFollowUp={() => setActiveSection(SECTION.FOLLOW_UP)}
+                    isConfirmed={isConfirmed}
+                    isConfirming={isConfirming}
+                    onConfirm={handleConfirmPrescription}
+                    onGoToFollowUp={() => setActiveSection(SECTION.FOLLOW_UP)}
                   />
                 ) : (
                   <PlaceholderSection title="Run a monitoring scenario first">
@@ -575,11 +631,16 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <FollowUpPanel />
+                <FollowUpDashboard doctorId={currentUserId} />
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
-                <SettingsPanel />
+                <SettingsPanel
+                  doctorProfile={doctorProfile}
+                  doctorEmail={doctorEmail}
+                  workspaceName={workspaceName}
+                  onLogout={returnToLanding}
+                />
               ) : null}
 
               {activeSection === SECTION.DOCTOR_PROFILE ? (
@@ -589,6 +650,7 @@ function App() {
                   onUpdateProfile={handleUpdateDoctorProfile}
                 />
               ) : null}
+              </ErrorBoundary>
             </div>
 
             <footer className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
@@ -700,21 +762,15 @@ function App() {
                     >
                       Back to monitoring
                     </button>
-                    {!isConfirmed ? (
+                    {isConfirmed ? (
                       <button
                         type="button"
-                        onClick={handleConfirmPrescription}
-                        disabled={isConfirming}
-                        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                        onClick={() => setActiveSection(SECTION.FOLLOW_UP)}
+                        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
                       >
-                        {isConfirming ? 'Sending...' : 'Confirm & send to pharmacy'}
+                        Go to follow-up
                       </button>
-                    ) : (
-                      <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800 border border-teal-200/60 shadow-sm">
-                        <span className="text-teal-600 text-lg">✓</span>
-                        Prescription Sent!
-                      </div>
-                    )}
+                    ) : null}
                   </>
                 ) : null}
               </div>
