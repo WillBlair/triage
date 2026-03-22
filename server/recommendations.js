@@ -134,7 +134,9 @@ async function askClaudeJson(system, payload, maxTokens = 1800) {
   }
 
   const data = await response.json()
-  return JSON.parse(data.content?.[0]?.text || '{}')
+  const raw = data.content?.[0]?.text || '{}'
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+  return JSON.parse(cleaned)
 }
 
 async function* streamVisibleAnalysis(payload) {

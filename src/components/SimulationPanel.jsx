@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import DrugInteractionGraph from './DrugInteractionGraph'
 import TimelineChart from './TimelineChart'
 
 const FLAG_STYLE = {
@@ -181,6 +182,14 @@ function SimulationPanel({
           isRunning={isRunning}
           regimenLabel={regimenLabel}
         />
+
+        {simulation?.interactions?.length > 0 && (
+          <DrugInteractionGraph
+            interactions={simulation.interactions}
+            currentMeds={simulation.currentMeds || []}
+            newDrug={selectedDrug?.name || ''}
+          />
+        )}
 
         <div className={`flex flex-col gap-2 ${detailsGap}`}>
           <details className="group rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md open:ring-1 open:ring-slate-200/60">
