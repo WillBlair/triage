@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import ProfileCard from './ProfileCard'
+import { savePatientToSupabase } from '../hooks/usePatients'
 
 const STEPS = [
   { id: 'basics', label: 'Basics' },
@@ -571,7 +572,7 @@ function StepChartMerge({
 
 /* ── Main component ── */
 
-export default function AddPatientIntake({ doctorEmail, doctorName, onMergePatient, ...profileCardProps }) {
+export default function AddPatientIntake({ doctorEmail, doctorName, doctorId, onMergePatient, ...profileCardProps }) {
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState({ name: '', dob: '', sex: '', mrn: '', email: '', phone: '', concerns: [], notes: '' })
   const [intakeSections, setIntakeSections] = useState(() => {
@@ -698,8 +699,11 @@ export default function AddPatientIntake({ doctorEmail, doctorName, onMergePatie
       if (sub.symptoms?.length) entry.profile.chiefConcern += (entry.profile.chiefConcern ? '; ' : '') + sub.symptoms.join(', ')
     }
 
+    // Save to Supabase so both Patient Library and Follow Up see this patient
+    savePatientToSupabase(doctorId, entry).catch(() => {})
+
     if (onMergePatient) onMergePatient(entry)
-  }, [draft, intakeSubmission, profileCardProps.profile, onMergePatient])
+  }, [draft, intakeSubmission, profileCardProps.profile, onMergePatient, doctorId])
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1))
   const back = () => setStep((s) => Math.max(s - 1, 0))

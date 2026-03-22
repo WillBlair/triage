@@ -7,7 +7,6 @@ import PatientLibraryPanel from './components/PatientLibraryPanel'
 import AuthPage, { AUTH_MODE } from './components/AuthPage'
 import LandingPage from './components/LandingPage'
 import Onboarding from './components/Onboarding'
-import PatientProfile from './components/PatientProfile'
 import DoctorProfilePanel from './components/DoctorProfilePanel'
 import PlaceholderSection from './components/PlaceholderSection'
 import FollowUpDashboard from './components/FollowUpDashboard'
@@ -108,8 +107,6 @@ function App() {
   const [workspaceName, setWorkspaceName] = useState('')
   const [currentUserId, setCurrentUserId] = useState(null)
   const [doctorEmail, setDoctorEmail] = useState('')
-  const [savedPatients, setSavedPatients] = useState([])
-  const [prescriptions, setPrescriptions] = useState([])
   const hasSignedIn = useRef(false)
 
   // When a user signs in, load their profile from Supabase
@@ -259,9 +256,8 @@ function App() {
     }
   }, [currentUserId, workspaceName])
 
-  const handleMergePatient = useCallback((patientEntry) => {
-    setSavedPatients((prev) => [patientEntry, ...prev])
-  }, [])
+  // No-op: patients are now saved directly to Supabase from AddPatientIntake
+  const handleMergePatient = useCallback(() => {}, [])
 
   const handleSelectFile = async (file) => {
     setFileName(file.name)
@@ -335,18 +331,6 @@ function App() {
       // Always mark confirmed for the demo — even if Supabase table doesn't exist
       setIsConfirmed(true)
       setIsConfirming(false)
-      // Track locally so Follow-up dashboard can show it
-      setPrescriptions((prev) => [
-        {
-          id: `rx-${Date.now()}`,
-          patient_name: profile?.patientName || 'Unknown',
-          selected_drug: selectedDrug,
-          pharmacy: pharmacy || null,
-          simulation_summary: simulation?.summary || '',
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ])
     }
   }
 
@@ -541,6 +525,7 @@ function App() {
                   error=""
                   doctorEmail={doctorEmail}
                   doctorName={doctorProfile?.displayName || ''}
+                  doctorId={currentUserId}
                   onMergePatient={handleMergePatient}
                 />
               ) : null}
@@ -557,7 +542,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.PROFILES && !librarySelectedEntry ? (
-                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} savedPatients={savedPatients} />
+                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} doctorId={currentUserId} />
               ) : null}
 
               {activeSection === SECTION.RECOMMENDATIONS ? (
@@ -619,7 +604,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <FollowUpDashboard />
+                <FollowUpDashboard doctorId={currentUserId} />
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
