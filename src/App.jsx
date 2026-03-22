@@ -5,6 +5,11 @@ import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
 import PatientLibraryDetail from './components/PatientLibraryDetail'
 import PatientLibraryPanel from './components/PatientLibraryPanel'
+import AuthPage, { AUTH_MODE } from './components/AuthPage'
+import LandingPage from './components/LandingPage'
+import Onboarding from './components/Onboarding'
+import PatientProfile from './components/PatientProfile'
+import DoctorProfilePanel from './components/DoctorProfilePanel'
 import PlaceholderSection from './components/PlaceholderSection'
 import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
@@ -13,6 +18,7 @@ import SimulationPanel from './components/SimulationPanel'
 import ProgressStepper from './components/ProgressStepper'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
+import { supabase } from './services/supabase'
 
 function ClinicalDisclaimer() {
   return (
@@ -31,7 +37,7 @@ const SECTION_HEADER = {
     kicker: 'Intake',
     title: 'Add new patient',
     description:
-      'Upload a chart on the left; add encounter context on the right. Continue when the extract looks right.',
+      'Create a draft profile, send a patient intake, then upload and merge a chart.',
   },
   [SECTION.PROFILES]: {
     kicker: 'Records',
@@ -73,8 +79,11 @@ const SECTION_HEADER = {
   },
 }
 
+const VIEW = { LOADING: 'loading', LANDING: 'landing', AUTH: 'auth', EMAIL_CONFIRMED: 'email-confirmed', WORKSPACE: 'workspace' }
+
 function App() {
-  const [flowStarted, setFlowStarted] = useState(false)
+  const [view, setView] = useState(VIEW.LOADING)
+  const [authMode, setAuthMode] = useState(AUTH_MODE.SIGN_IN)
   const [activeSection, setActiveSection] = useState(SECTION.ADD_PATIENT)
   const [fileName, setFileName] = useState('')
   const [profile, setProfile] = useState(null)
@@ -88,6 +97,65 @@ function App() {
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
   const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
   const [librarySelectedEntry, setLibrarySelectedEntry] = useState(null)
+  const [onboardingComplete, setOnboardingComplete] = useState(() => {
+    try { return localStorage.getItem('triage_onboarded') === 'true' } catch { return false }
+  })
+  const [doctorProfile, setDoctorProfile] = useState(() => {
+    try { const s = localStorage.getItem('triage_doctor'); return s ? JSON.parse(s) : null } catch { return null }
+  })
+  const [workspaceName, setWorkspaceName] = useState(() => {
+    try { return localStorage.getItem('triage_workspace') || '' } catch { return '' }
+  })
+
+  // When a different user signs in, reset onboarding so they get their own experience
+  const syncUserData = useCallback((session) => {
+    if (!session) return
+    try {
+      const storedUserId = localStorage.getItem('triage_user_id')
+      if (storedUserId !== session.user.id) {
+        // Different user (or first ever login) — clear previous user's onboarding data
+        localStorage.removeItem('triage_onboarded')
+        localStorage.removeItem('triage_doctor')
+        localStorage.removeItem('triage_workspace')
+        localStorage.setItem('triage_user_id', session.user.id)
+        setOnboardingComplete(false)
+        setDoctorProfile(null)
+        setWorkspaceName('')
+      }
+    } catch { /* storage unavailable */ }
+  }, [])
+
+  // Resolve initial view: check for existing session before rendering anything
+  useEffect(() => {
+    // Check if this is an email confirmation redirect (Supabase puts tokens in the URL hash)
+    const hash = window.location.hash
+    const isEmailConfirmation =
+      hash.includes('type=signup') || hash.includes('type=email')
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isEmailConfirmation) {
+        // User clicked the confirmation link — sign them out so they must log in explicitly
+        supabase.auth.signOut()
+        setView(VIEW.EMAIL_CONFIRMED)
+      } else if (session) {
+        syncUserData(session)
+        setView(VIEW.WORKSPACE)
+      } else {
+        setView(VIEW.LANDING)
+      }
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Ignore the session created by email confirmation — we handle that above
+      if (event === 'SIGNED_IN' && session && view !== VIEW.EMAIL_CONFIRMED) {
+        syncUserData(session)
+        setView(VIEW.WORKSPACE)
+        setActiveSection(SECTION.ADD_PATIENT)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const intakeReady = useMemo(
     () => Boolean(profile) && !isParsing && !isLoadingRecommendations,
@@ -115,9 +183,10 @@ function App() {
     setLibrarySelectedEntry(null)
   }, [])
 
-  const returnToLanding = useCallback(() => {
+  const returnToLanding = useCallback(async () => {
+    await supabase.auth.signOut()
     resetWizard()
-    setFlowStarted(false)
+    setView(VIEW.LANDING)
   }, [resetWizard])
 
   useEffect(() => {
@@ -157,6 +226,13 @@ function App() {
     } finally {
       setIsLoadingRecommendations(false)
     }
+  }, [])
+
+  const handleUpdateDoctorProfile = useCallback((updated) => {
+    setDoctorProfile(updated)
+    try {
+      localStorage.setItem('triage_doctor', JSON.stringify(updated))
+    } catch { /* storage unavailable */ }
   }, [])
 
   const handleSelectFile = async (file) => {
@@ -233,34 +309,90 @@ function App() {
   }, [activeSection, librarySelectedEntry])
 
   const beginFlow = useCallback(() => {
-    setFlowStarted(true)
+    setView(VIEW.WORKSPACE)
     setActiveSection(SECTION.ADD_PATIENT)
   }, [])
 
-  if (!flowStarted) {
+  if (view === VIEW.LOADING) {
     return (
-      <div className="min-h-screen pb-14 text-slate-900 sm:pb-12">
-        <ClinicalDisclaimer />
-        <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-4 py-16 sm:px-6 lg:max-w-4xl lg:px-8">
-          <header className="text-center sm:text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">
-              Triage
-            </p>
-            <h1 className="mt-4 max-w-3xl font-serif text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:mt-5 sm:text-5xl sm:leading-[1.12]">
-              Upload a chart. Compare three regimens side by side.
-            </h1>
-          </header>
-          <div className="mt-10 flex flex-col gap-3 sm:mt-12 sm:flex-row sm:justify-center sm:gap-4 lg:justify-start">
-            <button
-              type="button"
-              onClick={beginFlow}
-              className="rounded-2xl bg-teal-600 px-6 py-3.5 text-center text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 sm:min-w-[11rem]"
-            >
-              Get started
-            </button>
-          </div>
-        </main>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-teal-700">
+            Triage
+          </p>
+          <p className="mt-2 text-sm text-slate-400">Loading&hellip;</p>
+        </div>
       </div>
+    )
+  }
+
+  if (view === VIEW.LANDING) {
+    return (
+      <>
+        <ClinicalDisclaimer />
+        <LandingPage onGetStarted={() => { setAuthMode(AUTH_MODE.SIGN_UP); setView(VIEW.AUTH) }} onLogin={() => { setAuthMode(AUTH_MODE.SIGN_IN); setView(VIEW.AUTH) }} />
+      </>
+    )
+  }
+
+  if (view === VIEW.EMAIL_CONFIRMED) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <ClinicalDisclaimer />
+        <div className="w-full max-w-md rounded-[1.75rem] border border-slate-200/90 bg-white p-8 text-center shadow-[0_20px_64px_rgba(15,23,42,0.09),0_0_0_1px_rgba(15,23,42,0.04)] sm:p-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">Triage</p>
+          <div className="mx-auto mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+            <svg className="h-7 w-7 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            </svg>
+          </div>
+          <h1 className="mt-4 font-serif text-2xl font-semibold text-slate-950">Email confirmed</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            Your email has been verified. You can now sign in to your account.
+          </p>
+          <button
+            type="button"
+            onClick={() => setView(VIEW.AUTH)}
+            className="mt-6 w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
+          >
+            Go to sign in
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (view === VIEW.AUTH) {
+    return (
+      <>
+        <ClinicalDisclaimer />
+        <AuthPage
+          initialMode={authMode}
+          onAuthenticated={beginFlow}
+          onBack={() => setView(VIEW.LANDING)}
+        />
+      </>
+    )
+  }
+
+  if (!onboardingComplete) {
+    return (
+      <>
+        <ClinicalDisclaimer />
+        <Onboarding
+          onFinish={({ doctorProfile: dp, workspace: ws }) => {
+            setDoctorProfile(dp)
+            setWorkspaceName(ws.workspaceName)
+            setOnboardingComplete(true)
+            setActiveSection(SECTION.ADD_PATIENT)
+            try {
+              localStorage.setItem('triage_onboarded', 'true')
+              localStorage.setItem('triage_doctor', JSON.stringify(dp))
+              localStorage.setItem('triage_workspace', ws.workspaceName)
+            } catch { /* storage unavailable */ }
+          }}
+        />
+      </>
     )
   }
 
@@ -273,6 +405,8 @@ function App() {
               activeSection={activeSection}
               onSelectSection={setActiveSection}
               onLogout={returnToLanding}
+              doctorProfile={doctorProfile}
+              workspaceName={workspaceName}
             />
             <main className="flex min-h-0 min-w-0 flex-1 flex-col border-l border-slate-200/80 bg-white">
               <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5 lg:pl-10 lg:pr-12">
@@ -435,37 +569,18 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.DOCTOR_PROFILE ? (
-                <PlaceholderSection>
-                  <p>
-                    Your display name, specialty, and NPI can be shown on generated summaries when this
-                    section is connected to an account backend.
-                  </p>
-                  <dl className="mt-6 grid gap-4 border-t border-slate-200/80 pt-6 text-sm sm:grid-cols-2">
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Display name
-                      </dt>
-                      <dd className="mt-1 text-slate-500">—</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Specialty
-                      </dt>
-                      <dd className="mt-1 text-slate-500">—</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">NPI</dt>
-                      <dd className="mt-1 text-slate-500">—</dd>
-                    </div>
-                  </dl>
-                </PlaceholderSection>
+                <DoctorProfilePanel
+                  doctorProfile={doctorProfile}
+                  workspaceName={workspaceName}
+                  onUpdateProfile={handleUpdateDoctorProfile}
+                />
               ) : null}
             </div>
 
             <footer className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
               <div className="text-xs text-slate-500">
                 {activeSection === SECTION.ADD_PATIENT && !intakeReady && isParsing ? (
-                  <span>Parsing PDF — structured summary loads in the panel above.</span>
+                  <span>Parsing PDF — structured summary loads in the chart step.</span>
                 ) : null}
                 {activeSection === SECTION.ADD_PATIENT && !intakeReady && !isParsing && isLoadingRecommendations ? (
                   <span>
@@ -474,6 +589,9 @@ function App() {
                 ) : null}
                 {activeSection === SECTION.ADD_PATIENT && intakeReady ? (
                   <span>Chart summary and comparison rows are ready. Continue when the snapshot looks right.</span>
+                ) : null}
+                {activeSection === SECTION.ADD_PATIENT && !intakeReady && !isParsing && !isLoadingRecommendations ? (
+                  <span>Follow the stepper: create a draft, send intake, then upload a chart.</span>
                 ) : null}
                 {activeSection === SECTION.RECOMMENDATIONS && isLoadingRecommendations ? (
                   <span>Loading treatment contrast…</span>
