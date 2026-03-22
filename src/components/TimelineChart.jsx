@@ -48,7 +48,7 @@ function ProjectionLoading({ regimenLabel }) {
   )
 }
 
-function TimelineChart({ simulation, isRunning = false, regimenLabel = '' }) {
+function TimelineChart({ simulation, isRunning = false, regimenLabel = '', patientName = '' }) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const svgRef = useRef(null)
 
@@ -208,7 +208,11 @@ function TimelineChart({ simulation, isRunning = false, regimenLabel = '' }) {
           </h3>
           {regimenLabel ? (
             <p className="mt-1 text-sm text-slate-600">
-              For selected regimen:{' '}
+              {patientName ? (
+                <>Projected outlook for <span className="font-medium text-slate-800">{patientName}</span> with regimen:{' '}</>
+              ) : (
+                <>For selected regimen:{' '}</>
+              )}
               <span className="font-medium text-slate-800">{regimenLabel}</span>
             </p>
           ) : null}

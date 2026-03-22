@@ -5,6 +5,7 @@ function SimulationPanel({
   selectedDrug,
   simulation,
   isRunning,
+  patientName,
   onRun,
   onContinueToPrescribe,
 }) {
@@ -71,6 +72,7 @@ function SimulationPanel({
           simulation={simulation}
           isRunning={isRunning}
           regimenLabel={regimenLabel}
+          patientName={patientName}
         />
       </div>
 

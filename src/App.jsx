@@ -590,6 +590,7 @@ function App() {
                   selectedDrug={selectedDrug}
                   simulation={simulation}
                   isRunning={isRunningSimulation}
+                  patientName={profile?.patientName || profile?.name}
                   onRun={handleRunSimulation}
                 />
               ) : null}
