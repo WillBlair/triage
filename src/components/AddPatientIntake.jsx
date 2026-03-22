@@ -180,12 +180,12 @@ function StepBasics({ draft, onDraftChange }) {
             </select>
           </div>
           <div>
-            <FieldLabel id="patient-mrn">MRN / identifier</FieldLabel>
+            <FieldLabel id="patient-mrn">Telegram handle (@...)</FieldLabel>
             <input
               id="patient-mrn"
               type="text"
               required
-              placeholder="e.g. clinic MRN or last 4 digits"
+              placeholder="e.g. @willblair"
               value={draft.mrn || ''}
               onChange={(e) => patch({ mrn: e.target.value })}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
