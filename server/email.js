@@ -1,10 +1,9 @@
 import { Resend } from 'resend'
 
-const resendApiKey = process.env.RESEND_API_KEY?.trim() || ''
-
 export function createEmailRoutes(router) {
   router.post('/api/send-intake-email', async (req, res) => {
-    if (!resendApiKey) {
+    const apiKey = process.env.RESEND_API_KEY?.trim() || ''
+    if (!apiKey) {
       return res.status(500).json({ error: 'RESEND_API_KEY is not configured on the server.' })
     }
 
@@ -17,7 +16,7 @@ export function createEmailRoutes(router) {
       return res.status(400).json({ error: 'Intake link URL is required.' })
     }
 
-    const resend = new Resend(resendApiKey)
+    const resend = new Resend(apiKey)
 
     // Resend free tier requires sending from onboarding@resend.dev
     // With a verified custom domain you can use the doctor's real email.
