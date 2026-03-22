@@ -14,7 +14,16 @@ export default function AppSidebar({ activeSection, onSelectSection, onLogout })
       aria-label="Main navigation"
     >
       <div className="border-b border-slate-200/80 px-5 pb-5 pt-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">Triage</p>
+        <div className="flex items-center gap-2">
+          <img
+            src="/triagelogo.png"
+            alt="Triage logo"
+            width={28}
+            height={28}
+            className="h-7 w-7 shrink-0"
+          />
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">Triage</p>
+        </div>
         <p className="mt-1 font-serif text-lg font-semibold tracking-tight text-slate-900">Workspace</p>
         <p className="mt-1 text-[11px] font-medium leading-snug text-slate-500">
           Decision support, clinician in the loop
