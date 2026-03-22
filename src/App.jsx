@@ -9,8 +9,8 @@ import LandingPage from './components/LandingPage'
 import Onboarding from './components/Onboarding'
 import PatientProfile from './components/PatientProfile'
 import DoctorProfilePanel from './components/DoctorProfilePanel'
-import FollowUpPanel from './components/FollowUpPanel'
 import PlaceholderSection from './components/PlaceholderSection'
+import FollowUpDashboard from './components/FollowUpDashboard'
 import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -102,6 +102,7 @@ function App() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [doctorEmail, setDoctorEmail] = useState('')
   const [savedPatients, setSavedPatients] = useState([])
+  const [prescriptions, setPrescriptions] = useState([])
   const hasSignedIn = useRef(false)
 
   // When a user signs in, load their profile from Supabase
@@ -297,7 +298,7 @@ function App() {
     }
   }
 
-  const handleConfirmPrescription = async () => {
+  const handleConfirmPrescription = async (pharmacy) => {
     setIsConfirming(true)
     try {
       await savePrescription({
@@ -307,12 +308,24 @@ function App() {
         allRecommendations: recommendations,
         simulation,
       })
-      setIsConfirmed(true)
     } catch (err) {
-      console.warn('Prescription save failed:', err)
-      setIsConfirmed(true)
+      console.warn('Prescription save failed (demo continues):', err)
     } finally {
+      // Always mark confirmed for the demo — even if Supabase table doesn't exist
+      setIsConfirmed(true)
       setIsConfirming(false)
+      // Track locally so Follow-up dashboard can show it
+      setPrescriptions((prev) => [
+        {
+          id: `rx-${Date.now()}`,
+          patient_name: profile?.patientName || 'Unknown',
+          selected_drug: selectedDrug,
+          pharmacy: pharmacy || null,
+          simulation_summary: simulation?.summary || '',
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ])
     }
   }
 
@@ -555,8 +568,10 @@ function App() {
                     profile={profile}
                     selectedDrug={selectedDrug}
                     simulation={simulation}
-                    patientEmail={intakeForm.patientEmail}
-                    onNavigateToFollowUp={() => setActiveSection(SECTION.FOLLOW_UP)}
+                    isConfirmed={isConfirmed}
+                    isConfirming={isConfirming}
+                    onConfirm={handleConfirmPrescription}
+                    onGoToFollowUp={() => setActiveSection(SECTION.FOLLOW_UP)}
                   />
                 ) : (
                   <PlaceholderSection title="Run a monitoring scenario first">
@@ -583,7 +598,14 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <FollowUpPanel />
+                <FollowUpDashboard
+                  savedPatients={savedPatients}
+                  prescriptions={prescriptions}
+                  onOpenPatientDetail={(entry) => {
+                    setLibrarySelectedEntry(entry)
+                    setActiveSection(SECTION.PROFILES)
+                  }}
+                />
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
@@ -709,21 +731,15 @@ function App() {
                     >
                       Back to monitoring
                     </button>
-                    {!isConfirmed ? (
+                    {isConfirmed ? (
                       <button
                         type="button"
-                        onClick={handleConfirmPrescription}
-                        disabled={isConfirming}
-                        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                        onClick={() => setActiveSection(SECTION.FOLLOW_UP)}
+                        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
                       >
-                        {isConfirming ? 'Sending...' : 'Confirm & send to pharmacy'}
+                        Go to follow-up
                       </button>
-                    ) : (
-                      <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800 border border-teal-200/60 shadow-sm">
-                        <span className="text-teal-600 text-lg">✓</span>
-                        Prescription Sent!
-                      </div>
-                    )}
+                    ) : null}
                   </>
                 ) : null}
               </div>

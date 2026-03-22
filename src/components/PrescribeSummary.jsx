@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react'
-import { supabase } from '../services/supabase'
 
 const DEMO_PHARMACIES = [
   {
@@ -83,12 +82,9 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
   return lines.join('\n')
 }
 
-export default function PrescribeSummary({ profile, selectedDrug, simulation, patientEmail, onNavigateToFollowUp }) {
+export default function PrescribeSummary({ profile, selectedDrug, simulation, isConfirmed, isConfirming, onConfirm, onGoToFollowUp }) {
   const [copied, setCopied] = useState(false)
   const [pharmacyId, setPharmacyId] = useState(DEMO_PHARMACIES[0].id)
-  const [dispatching, setDispatching] = useState(false)
-  const [dispatched, setDispatched] = useState(false)
-  const [dispatchError, setDispatchError] = useState('')
 
   const selectedPharmacy = useMemo(
     () => DEMO_PHARMACIES.find((p) => p.id === pharmacyId) ?? DEMO_PHARMACIES[0],
@@ -109,24 +105,6 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation, pa
   const topEffects = useMemo(() => (simulation?.sideEffects || []).slice(0, 4), [simulation])
   const topRisks = useMemo(() => (simulation?.riskScores || []).slice(0, 4), [simulation])
   const pearls = useMemo(() => (simulation?.takeaways || []).slice(0, 5), [simulation])
-
-  const handleDispatch = useCallback(async () => {
-    if (!patientEmail?.trim() || !selectedDrug?.name) return
-    setDispatching(true)
-    setDispatchError('')
-    try {
-      const { error } = await supabase.from('prescriptions').insert({
-        patient_email: patientEmail.trim().toLowerCase(),
-        medication_name: selectedDrug.name,
-      })
-      if (error) throw error
-      setDispatched(true)
-    } catch (err) {
-      setDispatchError(err.message ?? 'Failed to dispatch check-in.')
-    } finally {
-      setDispatching(false)
-    }
-  }, [patientEmail, selectedDrug])
 
   const handleCopy = useCallback(async () => {
     try {
@@ -312,51 +290,66 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation, pa
           </div>
         </div>
 
+        {/* Confirm / Send section */}
         <div className="mt-8 border-t border-slate-100 pt-6">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Dispatch Triage check-in
-          </h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-            Send a post-appointment follow-up to the patient via Discord. Triage will message them
-            in 24 hours to screen for side effects and drug interactions.
-          </p>
-          {!patientEmail?.trim() ? (
-            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-800">
-              No patient email on file. Go back to <strong className="font-semibold">Add new patient → Chart &amp; merge</strong> and enter the patient email to enable this.
-            </div>
-          ) : dispatched ? (
-            <div className="mt-3 flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
-              <p className="text-sm font-medium text-emerald-800">
-                Check-in dispatched for <span className="font-semibold">{patientEmail}</span>. Triage will contact the patient.
+          {!isConfirmed ? (
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+              <p className="text-sm text-slate-600">
+                Review the draft above, then send to <span className="font-semibold text-slate-800">{selectedPharmacy.name}</span>.
               </p>
-              {onNavigateToFollowUp && (
-                <button
-                  type="button"
-                  onClick={onNavigateToFollowUp}
-                  className="self-start text-xs font-semibold text-emerald-700 underline underline-offset-2 transition hover:text-emerald-900"
-                >
-                  View in Follow up →
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
-                {patientEmail}
-              </div>
               <button
                 type="button"
-                onClick={handleDispatch}
-                disabled={dispatching}
-                className="shrink-0 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:opacity-50"
+                onClick={() => onConfirm?.(selectedPharmacy)}
+                disabled={isConfirming}
+                className="shrink-0 rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {dispatching ? 'Sending…' : 'Send check-in'}
+                {isConfirming ? 'Sending\u2026' : 'Confirm & send to pharmacy'}
               </button>
             </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-emerald-900">Prescription sent (demo)</h3>
+                  <p className="mt-1 text-sm text-emerald-800">
+                    Handoff for <span className="font-semibold">{profile?.patientName || 'patient'}</span> has been
+                    simulated as sent to <span className="font-semibold">{selectedPharmacy.name}</span>.
+                  </p>
+                  <dl className="mt-3 space-y-1 text-sm text-emerald-700">
+                    <div className="flex gap-2">
+                      <dt className="text-emerald-600">Pharmacy:</dt>
+                      <dd>{selectedPharmacy.name} — {selectedPharmacy.detail}</dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-emerald-600">Medication:</dt>
+                      <dd>{selectedDrug?.name} {selectedDrug?.dose ? `(${selectedDrug.dose})` : ''}</dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-emerald-600">Status:</dt>
+                      <dd className="font-semibold">Delivered (simulated)</dd>
+                    </div>
+                  </dl>
+                  <p className="mt-3 text-xs text-emerald-600">
+                    In production this would transmit via eRx / NCPDP SCRIPT. This demo only saves a record.
+                  </p>
+                  {onGoToFollowUp ? (
+                    <button
+                      type="button"
+                      onClick={onGoToFollowUp}
+                      className="mt-4 rounded-xl border border-emerald-300 bg-white px-5 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+                    >
+                      View in follow-up
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
           )}
-          {dispatchError ? (
-            <p className="mt-2 text-sm text-rose-600">{dispatchError}</p>
-          ) : null}
         </div>
 
         <div className="mt-8 grid gap-4 border-t border-dashed border-slate-200 pt-6 sm:grid-cols-2">
