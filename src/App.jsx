@@ -83,7 +83,14 @@ const VIEW = { LOADING: 'loading', LANDING: 'landing', AUTH: 'auth', EMAIL_CONFI
 function App() {
   const [view, setView] = useState(VIEW.LOADING)
   const [authMode, setAuthMode] = useState(AUTH_MODE.SIGN_IN)
-  const [activeSection, setActiveSection] = useState(SECTION.ADD_PATIENT)
+  const [activeSection, setActiveSectionRaw] = useState(() => {
+    const saved = sessionStorage.getItem('triage_active_section')
+    return saved && Object.values(SECTION).includes(saved) ? saved : SECTION.ADD_PATIENT
+  })
+  const setActiveSection = useCallback((section) => {
+    setActiveSectionRaw(section)
+    sessionStorage.setItem('triage_active_section', section)
+  }, [])
   const [fileName, setFileName] = useState('')
   const [profile, setProfile] = useState(null)
   const [recommendations, setRecommendations] = useState(null)
@@ -130,28 +137,28 @@ function App() {
     const isEmailConfirmation =
       hash.includes('type=signup') || hash.includes('type=email')
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (isEmailConfirmation) {
         // User clicked the confirmation link — sign them out so they must log in explicitly
         supabase.auth.signOut()
         setView(VIEW.EMAIL_CONFIRMED)
       } else if (session) {
         hasSignedIn.current = true
-        syncUserData(session)
+        await syncUserData(session)
         setView(VIEW.WORKSPACE)
       } else {
         setView(VIEW.LANDING)
       }
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       // Only act on genuine first sign-in. Supabase re-emits SIGNED_IN on
       // tab focus, token refresh, etc. — ignore those to keep the UI stable.
       if (event === 'SIGNED_IN' && session && !hasSignedIn.current) {
         hasSignedIn.current = true
-        syncUserData(session)
+        await syncUserData(session)
         setView(VIEW.WORKSPACE)
-        setActiveSection(SECTION.ADD_PATIENT)
+        // Don't reset activeSection — let sessionStorage preserve it for returning users
       }
     })
 
@@ -185,6 +192,8 @@ function App() {
 
   const returnToLanding = useCallback(async () => {
     await supabase.auth.signOut()
+    hasSignedIn.current = false
+    sessionStorage.removeItem('triage_active_section')
     resetWizard()
     setView(VIEW.LANDING)
   }, [resetWizard])
@@ -342,8 +351,8 @@ function App() {
   }, [activeSection, librarySelectedEntry])
 
   const beginFlow = useCallback(() => {
-    setView(VIEW.WORKSPACE)
-    setActiveSection(SECTION.ADD_PATIENT)
+    // Show loading while onAuthStateChange handler awaits syncUserData
+    setView(VIEW.LOADING)
   }, [])
 
   if (view === VIEW.LOADING) {
