@@ -1,4 +1,32 @@
+import { useEffect, useRef } from 'react'
 import TimelineChart from './TimelineChart'
+
+const FLAG_STYLE = {
+  critical: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', dot: 'bg-rose-500' },
+  warning:  { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', dot: 'bg-amber-500' },
+  info:     { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-800', dot: 'bg-teal-500' },
+}
+
+function ThinkingStream({ text }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
+  }, [text])
+
+  if (!text) return null
+  return (
+    <div
+      ref={ref}
+      className="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm leading-relaxed text-teal-900 max-h-28 overflow-y-auto"
+    >
+      <span className="mr-2 text-[10px] font-semibold uppercase tracking-widest text-teal-600">
+        Analyzing
+      </span>
+      {text}
+      <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-teal-500 align-middle" />
+    </div>
+  )
+}
 
 function DisclosureChevron({ className = '' }) {
   return (
@@ -49,7 +77,15 @@ function riskSeverityTier(score, maxInList) {
   return 'high'
 }
 
-function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning, onRun }) {
+function SimulationPanel({
+  embedded = false,
+  selectedDrug,
+  simulation,
+  isRunning,
+  thinkingText = '',
+  onRun,
+  onContinueToPrescribe,
+}) {
   const shell = embedded
     ? 'flex flex-col'
     : 'flex flex-col rounded-[2rem] border border-slate-200/80 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur'
@@ -61,6 +97,7 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
   const riskMaxBar = Math.max(1, rawRiskMax)
   const effects = simulation?.sideEffects || []
   const takeaways = simulation?.takeaways || []
+  const flags = simulation?.flags || []
 
   const regimenLabel = selectedDrug
     ? `${selectedDrug.name} · ${selectedDrug.dose}`
@@ -80,15 +117,12 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">
             The chart is the primary view: it encodes the illustrative eight-week trajectory for your
-            selected contrast. Open the sections below for scored monitoring themes and follow-up
-            pearls.
+            selected contrast. Open the sections below for scored monitoring themes and follow-up pearls.
           </p>
         </div>
       ) : null}
 
-      <div
-        className={`flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between ${headerGap}`}
-      >
+      <div className={`flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between ${headerGap}`}>
         <div className="min-w-0 flex-1 rounded-2xl border border-teal-200/80 bg-teal-50/50 px-4 py-3.5 ring-1 ring-teal-100/60">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-800">
             Selected contrast
@@ -102,10 +136,6 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
               {selectedDrug.drugClass ? (
                 <p className="mt-1.5 text-xs text-slate-600">{selectedDrug.drugClass}</p>
               ) : null}
-              <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                The scenario below models follow-up expectations for this option only — switch
-                regimens under Drug comparison to compare a different contrast.
-              </p>
             </>
           ) : (
             <p className="mt-2 text-sm text-slate-600">
@@ -125,6 +155,27 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
       </div>
 
       <div className={`flex flex-col gap-3 ${chartGap}`}>
+        {(isRunning || thinkingText) && !simulation && (
+          <ThinkingStream text={thinkingText} />
+        )}
+
+        {flags.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {flags.map((flag, i) => {
+              const s = FLAG_STYLE[flag.type] || FLAG_STYLE.info
+              return (
+                <div key={i} className={`flex items-start gap-3 rounded-2xl border ${s.border} ${s.bg} px-4 py-3`}>
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
+                  <div>
+                    <p className={`text-xs font-semibold ${s.text}`}>{flag.label}</p>
+                    {flag.detail && <p className={`mt-0.5 text-xs ${s.text} opacity-80`}>{flag.detail}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         <TimelineChart
           simulation={simulation}
           isRunning={isRunning}
@@ -134,21 +185,17 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
         <div className={`flex flex-col gap-2 ${detailsGap}`}>
           <details className="group rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md open:ring-1 open:ring-slate-200/60">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Monitoring considerations
-                  {risks.length > 0 ? (
-                    <span className="ml-2 font-normal text-slate-500">({risks.length} themes)</span>
-                  ) : null}
-                </p>
-              </div>
+              <p className="text-sm font-semibold text-slate-900">
+                Monitoring considerations
+                {risks.length > 0 ? (
+                  <span className="ml-2 font-normal text-slate-500">({risks.length} themes)</span>
+                ) : null}
+              </p>
               <DisclosureChevron />
             </summary>
             <div className="border-t border-slate-100 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
               {risks.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Relative monitoring emphasis appears here after the scenario completes.
-                </p>
+                <p className="text-sm text-slate-500">Appears after the scenario completes.</p>
               ) : (
                 <ul className="divide-y divide-slate-200/80">
                   {risks.map((item) => {
@@ -157,17 +204,11 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
                     const tier = RISK_TIER[tierKey]
                     const barPct = Math.min(100, Math.round((score / riskMaxBar) * 100))
                     return (
-                      <li
-                        key={item.label}
-                        className="py-3 first:pt-0"
-                        aria-label={`${item.label}, score ${score}, ${tier.label} relative severity`}
-                      >
+                      <li key={item.label} className="py-3 first:pt-0">
                         <div className="flex items-baseline justify-between gap-3">
                           <span className="text-sm text-slate-700">{item.label}</span>
                           <div className="flex items-baseline gap-2">
-                            <span
-                              className={`text-[10px] font-semibold uppercase tracking-wider ${tier.text}`}
-                            >
+                            <span className={`text-[10px] font-semibold uppercase tracking-wider ${tier.text}`}>
                               {tier.label}
                             </span>
                             <span className="text-sm font-semibold tabular-nums text-slate-900">
@@ -175,10 +216,7 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
                             </span>
                           </div>
                         </div>
-                        <div
-                          className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/90 ring-1 ring-slate-300/40"
-                          aria-hidden
-                        >
+                        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/90 ring-1 ring-slate-300/40" aria-hidden>
                           <div
                             className={`h-full min-w-0 rounded-full ${tier.bar} transition-[width] duration-300 ease-out`}
                             style={{ width: `${barPct}%` }}
@@ -194,24 +232,19 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
 
           <details className="group rounded-2xl border border-slate-200 bg-white shadow-sm open:shadow-md open:ring-1 open:ring-slate-200/60">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Effects and follow-up pearls
-                  {effects.length + takeaways.length > 0 ? (
-                    <span className="ml-2 font-normal text-slate-500">
-                      ({effects.length + takeaways.length} items)
-                    </span>
-                  ) : null}
-                </p>
-              </div>
+              <p className="text-sm font-semibold text-slate-900">
+                Effects and follow-up pearls
+                {effects.length + takeaways.length > 0 ? (
+                  <span className="ml-2 font-normal text-slate-500">
+                    ({effects.length + takeaways.length} items)
+                  </span>
+                ) : null}
+              </p>
               <DisclosureChevron />
             </summary>
             <div className="border-t border-slate-100 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
               {effects.length === 0 && takeaways.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Illustrative side-effect discussion points and pearls appear here after the scenario
-                  completes.
-                </p>
+                <p className="text-sm text-slate-500">Appears after the scenario completes.</p>
               ) : (
                 <ul className="list-disc space-y-2 pl-4 text-sm leading-snug text-slate-700 marker:text-teal-600">
                   {effects.map((effect) => (
@@ -232,6 +265,21 @@ function SimulationPanel({ embedded = false, selectedDrug, simulation, isRunning
           </details>
         </div>
       </div>
+
+      {embedded && simulation && typeof onContinueToPrescribe === 'function' ? (
+        <div className="mt-5 flex flex-col items-stretch gap-2 border-t border-slate-200/80 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-600">
+            Next: open a shortened summary derived from this run — ready to share with pharmacy.
+          </p>
+          <button
+            type="button"
+            onClick={onContinueToPrescribe}
+            className="shrink-0 rounded-xl border border-teal-200 bg-teal-50/90 px-4 py-2.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-100"
+          >
+            Continue to Prescribe
+          </button>
+        </div>
+      ) : null}
     </section>
   )
 }

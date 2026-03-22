@@ -55,33 +55,63 @@ Rules:
 - Personalize to the profile; keep clinically plausible; put the single highest-yield caution in cautions (omit minor caveats).
 ${JSON_RESPONSE_RULE}`
 
-const SIMULATION_SYSTEM = `You are a clinical monitoring and follow-up scenario narrator.
-Given a patient profile and one selected contrast option, produce an 8-week educational monitoring scenario.
-Return JSON with this shape:
+const SIMULATION_SYSTEM = `You are a clinical simulation engine for a doctor decision-support tool.
+Given a patient profile and one selected drug, produce a detailed 8-week BP projection.
+
+Use the patient's actual data:
+- Start the BP curve from their real discharge/current BP value
+- Apply the selected drug's known mechanism and expected mmHg reduction timeline
+- Factor in comorbidities (T2DM, CKD, obesity, retinopathy, LVH if present)
+- Flag any NSAID use (ibuprofen) as a high-severity interaction that blunts antihypertensive effect
+- Flag ACE-I allergy if present — never recommend ACE inhibitors
+- Include hyperkalemia risk if ARB is selected and patient has concurrent K+ monitoring needs
+- Target range should reflect clinical goal (typically 120-130 systolic for hypertension with end-organ damage)
+
+Return JSON with this exact shape:
 {
-  "summary": "paragraph",
-  "projectedMetric": "string",
-  "targetRange": { "low": 0, "high": 0 },
+  "summary": "2-3 sentence clinical narrative specific to this patient and drug",
+  "projectedMetric": "Systolic BP (mmHg)",
+  "targetRange": { "low": 120, "high": 130 },
   "weeks": [
-    { "week": 0, "label": "Now", "value": 162, "riskScore": 70, "sideEffectScore": 20 }
+    { "week": 0, "label": "Now", "value": 158 },
+    { "week": 1, "label": "Wk 1", "value": 152 },
+    { "week": 2, "label": "Wk 2", "value": 147 },
+    { "week": 3, "label": "Wk 3", "value": 143 },
+    { "week": 4, "label": "Wk 4", "value": 139 },
+    { "week": 5, "label": "Wk 5", "value": 136 },
+    { "week": 6, "label": "Wk 6", "value": 133 },
+    { "week": 7, "label": "Wk 7", "value": 131 },
+    { "week": 8, "label": "Wk 8", "value": 128 }
   ],
   "sideEffects": [
     { "effect": "string", "probability": 0, "severity": "mild|moderate|high", "note": "string" }
   ],
-  "riskScores": [{ "label": "string", "score": 0 }],
+  "riskScores": [
+    { "label": "string", "score": 0 }
+  ],
+  "interactions": [
+    { "source": "string", "target": "string", "severity": "none|mild|moderate|high", "note": "string" }
+  ],
+  "currentMeds": ["string"],
+  "flags": [
+    { "type": "warning|info|critical", "label": "string", "detail": "string" }
+  ],
   "takeaways": ["string"]
 }
-Rules:
-- Keep values realistic and visually useful for demo purposes.
-- Use educational, decision-support language only; do not write as an order or directive.
-- Focus on expected trajectory, monitoring considerations, and follow-up pearls for discussion.
+
+For riskScores use 0-100 scale. Include risks like: Hyperkalemia, Renal impairment, Hypotension, NSAID interaction, Adherence risk.
+For interactions list all pairwise drug pairs from currentMeds + selected drug.
+For flags surface critical issues like NSAID conflict, allergy contraindications, monitoring requirements.
+currentMeds should be the patient's full medication list including the new drug.
+Keep BP values realistic — start from actual patient BP, trend toward target over 8 weeks.
 ${JSON_RESPONSE_RULE}`
 
-const STREAM_SYSTEM = `You are generating visible clinical analysis notes for a doctor demo.
-Write short high-level analysis sentences only.
-No markdown, no bullets, no JSON.
-Keep each sentence specific to the patient and selected contrast option.
-These notes will be streamed live in a monitoring scenario UI.`
+const STREAM_SYSTEM = `You are a clinical AI narrating a live simulation for a doctor.
+Write 4-6 short analysis sentences streamed one at a time.
+Be specific to the patient's actual data — mention their real BP values, medications, comorbidities, and the selected drug.
+Call out any critical flags like NSAID interactions, allergy conflicts, or monitoring requirements.
+No markdown, no bullets, no JSON. Plain sentences only.
+End with what the doctor should watch for at the 4-week follow-up.`
 
 async function askClaudeJson(system, payload, maxTokens = 1800) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
