@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
 
 function ProjectionLoading({ regimenLabel }) {
@@ -49,7 +49,16 @@ function ProjectionLoading({ regimenLabel }) {
 }
 
 function TimelineChart({ simulation, isRunning = false, regimenLabel = '' }) {
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const svgRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isFullscreen])
   const chartData = useMemo(() => simulation?.weeks || [], [simulation])
 
   const maxValue = useMemo(() => {
@@ -187,10 +196,10 @@ function TimelineChart({ simulation, isRunning = false, regimenLabel = '' }) {
     )
   }
 
-  return (
-    <div className="rounded-[1.75rem] border-2 border-slate-200/90 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
+  const chartContent = (
+    <>
       <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 pr-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
             8-week projected trajectory
           </p>
@@ -204,22 +213,53 @@ function TimelineChart({ simulation, isRunning = false, regimenLabel = '' }) {
             </p>
           ) : null}
           {simulation.summary ? (
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">{simulation.summary}</p>
+            <p className={`mt-3 text-sm leading-relaxed text-slate-600 ${isFullscreen ? 'max-w-4xl text-base' : ''}`}>{simulation.summary}</p>
           ) : null}
         </div>
-        {simulation.targetRange ? (
-          <span className="shrink-0 self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-100">
-            Illustrative target {simulation.targetRange.low}–{simulation.targetRange.high}
-          </span>
-        ) : null}
+        <div className="flex shrink-0 items-center justify-end gap-3 self-start">
+          {simulation.targetRange ? (
+            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-100">
+              Illustrative target {simulation.targetRange.low}–{simulation.targetRange.high}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className={`flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 ${isFullscreen ? 'h-10 w-10 bg-slate-100 hover:bg-slate-200' : 'h-8 w-8'}`}
+            title={isFullscreen ? 'Close full screen' : 'View full screen'}
+          >
+            {isFullscreen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-b from-slate-50/50 to-white ring-1 ring-slate-100">
-        <svg ref={svgRef} className="h-[min(420px,52vh)] min-h-[300px] w-full sm:min-h-[340px]" />
+      <div className={`relative overflow-hidden rounded-2xl bg-linear-to-b from-slate-50/50 to-white ring-1 ring-slate-100 flex-1 flex flex-col ${isFullscreen ? 'min-h-[50vh] p-4 lg:p-8' : ''}`}>
+        <svg ref={svgRef} className={`w-full ${isFullscreen ? 'flex-1 h-full min-h-0' : 'h-[min(420px,52vh)] min-h-[300px] sm:min-h-[340px]'}`} />
       </div>
       <p className="mt-3 text-center text-xs text-slate-500">
-        Educational projection for discussion only — not a individualized forecast or treatment
-        directive.
+        Educational projection for discussion only — not a individualized forecast or treatment directive.
       </p>
+    </>
+  )
+
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col bg-slate-50/95 p-4 backdrop-blur-md sm:p-8 lg:p-12">
+        {chartContent}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col rounded-[1.75rem] border-2 border-slate-200/90 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
+      {chartContent}
     </div>
   )
 }
