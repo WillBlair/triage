@@ -6,6 +6,7 @@ import AppSidebar from './components/AppSidebar'
 import PatientLibraryDetail from './components/PatientLibraryDetail'
 import PatientLibraryPanel from './components/PatientLibraryPanel'
 import PlaceholderSection from './components/PlaceholderSection'
+import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
@@ -427,14 +428,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
-                <PlaceholderSection>
-                  <p>Workspace preferences, API keys, and integrations will be configurable here.</p>
-                  <ul className="mt-4 list-inside list-disc space-y-1 text-slate-500">
-                    <li>Theme and density</li>
-                    <li>Data retention policy</li>
-                    <li>Connected EHR (not available in this build)</li>
-                  </ul>
-                </PlaceholderSection>
+                <SettingsPanel />
               ) : null}
 
               {activeSection === SECTION.DOCTOR_PROFILE ? (
