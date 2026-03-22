@@ -62,24 +62,34 @@ function OptionRow({ rank, drug, isSelected, onSelect }) {
               className="h-14 w-14 rounded-2xl bg-slate-50 object-contain p-1.5 ring-1 ring-slate-200/90 sm:h-16 sm:w-16"
             />
             <span
-              className={`absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-xl text-xs font-bold tabular-nums shadow-md ring-2 ring-white sm:h-8 sm:w-8 sm:text-sm ${
+              className={`absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-xl text-xs font-bold tabular-nums shadow-sm ring-2 ring-white sm:h-8 sm:w-8 sm:text-sm ${
                 rank === 1
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-600 text-white'
+                  ? 'bg-teal-600 text-white shadow-teal-600/40 ring-offset-1'
+                  : 'bg-slate-100 text-slate-500 border border-slate-200 shadow-none'
               }`}
               title={
                 rank === 1
                   ? 'Rank 1 — strongest model fit for this patient'
-                  : `Rank ${rank} — model fit ordering (lower rank = stronger fit)`
+                  : `Rank ${rank} — model fit ordering`
               }
             >
-              {rank}
+              #{rank}
             </span>
           </span>
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug text-slate-900 sm:text-base">{drug.name}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold leading-snug text-slate-900 sm:text-base">{drug.name}</p>
+            {rank === 1 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-teal-700 ring-1 ring-inset ring-teal-600/20">
+                <svg className="h-3 w-3 text-teal-500" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
+                </svg>
+                Top match
+              </span>
+            )}
+          </div>
           <p className="mt-0.5 text-sm leading-snug text-slate-600">{drug.dose}</p>
         </div>
 
