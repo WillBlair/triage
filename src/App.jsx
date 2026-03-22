@@ -140,9 +140,19 @@ function App() {
     const isEmailConfirmation =
       hash.includes('type=signup') || hash.includes('type=email')
 
+    // If this is an email confirmation, block onAuthStateChange from racing
+    // by marking hasSignedIn immediately. We'll reset it after signOut.
+    if (isEmailConfirmation) {
+      hasSignedIn.current = true
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (isEmailConfirmation) {
-        supabase.auth.signOut()
+        await supabase.auth.signOut()
+        // Clear the hash so the next sign-in isn't mistaken for confirmation
+        window.history.replaceState(null, '', window.location.pathname)
+        // Reset so the real sign-in via onAuthStateChange will work
+        hasSignedIn.current = false
         setView(VIEW.EMAIL_CONFIRMED)
       } else if (session) {
         hasSignedIn.current = true
