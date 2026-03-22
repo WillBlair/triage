@@ -1,4 +1,3 @@
-import { PDFParse } from 'pdf-parse'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || ''
@@ -108,13 +107,6 @@ currentMeds should be the patient's full medication list including the new drug.
 Keep BP values realistic — start from actual patient BP, trend toward target over 8 weeks.
 ${JSON_RESPONSE_RULE}`
 
-const STREAM_SYSTEM = `You are a clinical AI narrating a live simulation for a doctor.
-Write 4-6 short analysis sentences streamed one at a time.
-Be specific to the patient's actual data — mention their real BP values, medications, comorbidities, and the selected drug.
-Call out any critical flags like NSAID interactions, allergy conflicts, or monitoring requirements.
-No markdown, no bullets, no JSON. Plain sentences only.
-End with what the doctor should watch for at the 4-week follow-up.`
-
 async function askClaudeJson(system, payload, maxTokens = 1800) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -141,60 +133,6 @@ async function askClaudeJson(system, payload, maxTokens = 1800) {
   return JSON.parse(cleaned)
 }
 
-async function* streamVisibleAnalysis(payload) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: STREAM_SYSTEM,
-      stream: true,
-      messages: [{ role: 'user', content: JSON.stringify(payload) }],
-    }),
-  })
-
-  if (!response.ok || !response.body) {
-    throw new Error((await response.text()) || 'Claude stream failed.')
-  }
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-
-    if (done) {
-      break
-    }
-
-    buffer += decoder.decode(value, { stream: true })
-    const chunks = buffer.split('\n\n')
-    buffer = chunks.pop() || ''
-
-    for (const chunk of chunks) {
-      const line = chunk
-        .split('\n')
-        .find((entry) => entry.startsWith('data: ') && entry !== 'data: [DONE]')
-
-      if (!line) {
-        continue
-      }
-
-      const payloadJson = JSON.parse(line.replace('data: ', ''))
-
-      if (payloadJson.type === 'content_block_delta' && payloadJson.delta?.text) {
-        yield payloadJson.delta.text
-      }
-    }
-  }
-}
-
 export function createAiService() {
   if (!apiKey) {
     throw new Error(
@@ -204,16 +142,48 @@ export function createAiService() {
 
   return {
     async parseDocument(fileBuffer) {
-      const parser = new PDFParse({ data: fileBuffer })
+      // Send the PDF directly to Claude — no local parsing needed
+      const base64Pdf = Buffer.from(fileBuffer).toString('base64')
 
-      try {
-        const parsed = await parser.getText()
-        return askClaudeJson(PARSE_SYSTEM, {
-          documentText: parsed.text.slice(0, 120000),
-        })
-      } finally {
-        await parser.destroy()
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1800,
+          system: PARSE_SYSTEM,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'document',
+                source: {
+                  type: 'base64',
+                  media_type: 'application/pdf',
+                  data: base64Pdf,
+                },
+              },
+              {
+                type: 'text',
+                text: 'Parse this clinical document and return the structured JSON profile.',
+              },
+            ],
+          }],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error((await response.text()) || 'Claude PDF parse request failed.')
       }
+
+      const data = await response.json()
+      const raw = data.content?.[0]?.text || '{}'
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+      return JSON.parse(cleaned)
     },
     async createRecommendations(profile) {
       const raw = await askClaudeJson(RECOMMEND_SYSTEM, profile, 1000)
@@ -223,10 +193,6 @@ export function createAiService() {
       }
     },
     async *streamSimulation({ profile, recommendation }) {
-      for await (const chunk of streamVisibleAnalysis({ profile, recommendation })) {
-        yield { type: 'thinking', chunk }
-      }
-
       const simulation = await askClaudeJson(SIMULATION_SYSTEM, {
         profile,
         recommendation,

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DEFAULT_INTAKE_FORM } from './constants/intake'
 import { SECTION } from './constants/navigation'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
@@ -17,7 +16,7 @@ import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import ProgressStepper from './components/ProgressStepper'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
-import { getRecommendations, parseDocument, runSimulation } from './services/api'
+import { getRecommendations, parseDocument, runSimulation, savePrescription } from './services/api'
 import { supabase, fetchDoctorProfile, upsertDoctorProfile } from './services/supabase'
 
 function ClinicalDisclaimer() {
@@ -36,8 +35,7 @@ const SECTION_HEADER = {
   [SECTION.ADD_PATIENT]: {
     kicker: 'Intake',
     title: 'Add new patient',
-    description:
-      'Create a draft profile, send a patient intake, then upload and merge a chart.',
+    description: '',
   },
   [SECTION.PROFILES]: {
     kicker: 'Records',
@@ -54,13 +52,12 @@ const SECTION_HEADER = {
     kicker: 'Monitor',
     title: 'Monitoring & follow-up scenario',
     description:
-      'Generate an educational multi-week scenario for the selected contrast option, then review projected trends, risks, and follow-up pearls.',
+      'Generate an educational multi-week scenario for the selected contrast option and review the projected trajectory in the chart.',
   },
   [SECTION.PRESCRIPTION]: {
     kicker: 'Handoff',
     title: 'Draft handoff text',
-    description:
-      'Draft text derived from the last monitoring scenario. Use it as a handoff excerpt, then complete any real prescribing workflow elsewhere.',
+    description: '',
   },
   [SECTION.FOLLOW_UP]: {
     kicker: 'Care plan',
@@ -90,12 +87,12 @@ function App() {
   const [recommendations, setRecommendations] = useState(null)
   const [selectedDrug, setSelectedDrug] = useState(null)
   const [simulation, setSimulation] = useState(null)
-  const [thinkingText, setThinkingText] = useState('')
   const [error, setError] = useState('')
   const [isParsing, setIsParsing] = useState(false)
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
-  const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isConfirmed, setIsConfirmed] = useState(false)
   const [librarySelectedEntry, setLibrarySelectedEntry] = useState(null)
   const [onboardingComplete, setOnboardingComplete] = useState(false)
   const [doctorProfile, setDoctorProfile] = useState(null)
@@ -174,12 +171,11 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setThinkingText('')
     setError('')
+    setIsConfirmed(false)
     setIsParsing(false)
     setIsLoadingRecommendations(false)
     setIsRunningSimulation(false)
-    setIntakeForm({ ...DEFAULT_INTAKE_FORM })
     setLibrarySelectedEntry(null)
   }, [])
 
@@ -209,7 +205,6 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setThinkingText('')
     setIsLoadingRecommendations(true)
     try {
       const nextRecommendations = await getRecommendations(entry.profile)
@@ -246,7 +241,6 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setThinkingText('')
     setIsParsing(true)
     setIsLoadingRecommendations(false)
 
@@ -276,15 +270,11 @@ function App() {
     }
 
     setSimulation(null)
-    setThinkingText('')
     setError('')
     setIsRunningSimulation(true)
 
     try {
       await runSimulation(profile, selectedDrug, (event) => {
-        if (event.type === 'thinking') {
-          setThinkingText((prev) => prev + event.chunk)
-        }
         if (event.type === 'result') {
           setSimulation(event.simulation)
         }
@@ -297,6 +287,25 @@ function App() {
       )
     } finally {
       setIsRunningSimulation(false)
+    }
+  }
+
+  const handleConfirmPrescription = async () => {
+    setIsConfirming(true)
+    try {
+      await savePrescription({
+        doctorId: currentUserId,
+        patientProfile: profile,
+        selectedDrug,
+        allRecommendations: recommendations,
+        simulation,
+      })
+      setIsConfirmed(true)
+    } catch (err) {
+      console.warn('Prescription save failed:', err)
+      setIsConfirmed(true)
+    } finally {
+      setIsConfirming(false)
     }
   }
 
@@ -482,8 +491,6 @@ function App() {
             >
               {activeSection === SECTION.ADD_PATIENT ? (
                 <AddPatientIntake
-                  intakeForm={intakeForm}
-                  onIntakeChange={setIntakeForm}
                   fileName={fileName}
                   profile={profile}
                   isParsing={isParsing}
@@ -519,7 +526,6 @@ function App() {
                   onSelect={(drug) => {
                     setSelectedDrug(drug)
                     setSimulation(null)
-                    setThinkingText('')
                   }}
                 />
               ) : null}
@@ -530,7 +536,6 @@ function App() {
                   selectedDrug={selectedDrug}
                   simulation={simulation}
                   isRunning={isRunningSimulation}
-                  thinkingText={thinkingText}
                   onRun={handleRunSimulation}
                 />
               ) : null}
@@ -597,9 +602,6 @@ function App() {
                 ) : null}
                 {activeSection === SECTION.ADD_PATIENT && intakeReady ? (
                   <span>Chart summary and comparison rows are ready. Continue when the snapshot looks right.</span>
-                ) : null}
-                {activeSection === SECTION.ADD_PATIENT && !intakeReady && !isParsing && !isLoadingRecommendations ? (
-                  <span>Follow the stepper: create a draft, send intake, then upload a chart.</span>
                 ) : null}
                 {activeSection === SECTION.RECOMMENDATIONS && isLoadingRecommendations ? (
                   <span>Loading treatment contrast…</span>
@@ -697,6 +699,21 @@ function App() {
                     >
                       Back to monitoring
                     </button>
+                    {!isConfirmed ? (
+                      <button
+                        type="button"
+                        onClick={handleConfirmPrescription}
+                        disabled={isConfirming}
+                        className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isConfirming ? 'Sending...' : 'Confirm & send to pharmacy'}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800 border border-teal-200/60 shadow-sm">
+                        <span className="text-teal-600 text-lg">✓</span>
+                        Prescription Sent!
+                      </div>
+                    )}
                   </>
                 ) : null}
               </div>

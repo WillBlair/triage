@@ -1,15 +1,91 @@
 import crypto from 'node:crypto'
+import { createClient } from '@supabase/supabase-js'
+import { sendTelegramMessage } from './telegram.js'
 
-// In-memory store for prototype. Replace with Supabase table in production.
-const tokens = new Map()
+// ── Supabase client (server-side) ──
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+
+// In-memory fallback for local dev without Supabase table
+const localTokens = new Map()
 
 function generateToken() {
   return crypto.randomBytes(24).toString('base64url')
 }
 
+/** True when we have a working Supabase connection AND the table exists. */
+let useSupabase = !!supabase
+
+async function dbInsert(record) {
+  if (!useSupabase) {
+    localTokens.set(record.token, record)
+    return
+  }
+  try {
+    const { error } = await supabase.from('intake_tokens').insert({
+      token: record.token,
+      patient: record.patient,
+      sections: record.sections,
+      message: record.message,
+      created_at: record.createdAt,
+      expires_at: record.expiresAt,
+      revoked: record.revoked,
+      submission: record.submission,
+    })
+    if (error) {
+      // Table might not exist yet – fall back silently
+      console.warn('Supabase insert failed, falling back to memory:', error.message)
+      useSupabase = false
+      localTokens.set(record.token, record)
+    }
+  } catch {
+    useSupabase = false
+    localTokens.set(record.token, record)
+  }
+}
+
+async function dbFind(token) {
+  if (!useSupabase) return localTokens.get(token) ?? null
+  try {
+    const { data, error } = await supabase
+      .from('intake_tokens')
+      .select('*')
+      .eq('token', token)
+      .single()
+    if (error || !data) return null
+    // Normalize column names to camelCase for the rest of the code
+    return {
+      token: data.token,
+      patient: data.patient,
+      sections: data.sections,
+      message: data.message,
+      createdAt: data.created_at,
+      expiresAt: data.expires_at,
+      revoked: data.revoked,
+      submission: data.submission,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function dbUpdate(token, fields) {
+  if (!useSupabase) {
+    const record = localTokens.get(token)
+    if (record) Object.assign(record, fields)
+    return
+  }
+  // Convert camelCase fields to snake_case for Supabase
+  const mapped = {}
+  if ('revoked' in fields) mapped.revoked = fields.revoked
+  if ('submission' in fields) mapped.submission = fields.submission
+  await supabase.from('intake_tokens').update(mapped).eq('token', token)
+}
+
 export function createIntakeRoutes(router) {
   // Doctor creates an intake link
-  router.post('/api/intake-tokens', (req, res) => {
+  router.post('/api/intake-tokens', async (req, res) => {
     const { patient, sections, expiresInHours = 48, message } = req.body ?? {}
 
     if (!patient?.name?.trim()) {
@@ -21,8 +97,9 @@ export function createIntakeRoutes(router) {
     if (!String(patient.sex ?? '').trim()) {
       return res.status(400).json({ error: 'Sex is required.' })
     }
-    if (!String(patient.mrn ?? '').trim()) {
-      return res.status(400).json({ error: 'MRN or identifier is required.' })
+    const handleRaw = String(patient.mrn ?? '').trim()
+    if (!handleRaw) {
+      return res.status(400).json({ error: 'Telegram handle is required.' })
     }
 
     const token = generateToken()
@@ -37,13 +114,37 @@ export function createIntakeRoutes(router) {
       submission: null,
     }
 
-    tokens.set(token, record)
-    res.status(201).json(record)
+    await dbInsert(record)
+
+    // Direct Telegram Send Hackathon Flow
+    // If the input starts with '@', look up the chat_id in telegram_users
+    let msgSentToPatient = false
+    if (handleRaw.startsWith('@') && useSupabase) {
+      const handleLower = handleRaw.toLowerCase()
+      const { data } = await supabase
+        .from('telegram_users')
+        .select('chat_id')
+        .eq('username', handleLower)
+        .single()
+      
+      if (data?.chat_id) {
+        // Send the intake link instantly to their Telegram!
+        const intakeUrl = `https://triageplus.vercel.app/intake/${token}`
+        const text = `👋 Hi ${patient.name.split(' ')[0]},\n\nDr. Blair has requested some health information before your visit.\n\n📋 <a href="${intakeUrl}">Fill out your intake form here</a>\n\nThis takes about 3-5 minutes.`
+        await sendTelegramMessage(data.chat_id, text)
+        msgSentToPatient = true
+
+        // Link the chat ID to the intake token automatically
+        await supabase.from('intake_tokens').update({ telegram_chat_id: data.chat_id }).eq('token', token)
+      }
+    }
+
+    res.status(201).json({ ...record, msgSentToPatient })
   })
 
   // Patient validates token and gets config
-  router.get('/api/intake/:token', (req, res) => {
-    const record = tokens.get(req.params.token)
+  router.get('/api/intake/:token', async (req, res) => {
+    const record = await dbFind(req.params.token)
 
     if (!record) {
       return res.status(404).json({ error: 'Link not found or expired.' })
@@ -67,8 +168,8 @@ export function createIntakeRoutes(router) {
   })
 
   // Patient submits intake
-  router.post('/api/intake/:token/submit', (req, res) => {
-    const record = tokens.get(req.params.token)
+  router.post('/api/intake/:token/submit', async (req, res) => {
+    const record = await dbFind(req.params.token)
 
     if (!record) {
       return res.status(404).json({ error: 'Link not found.' })
@@ -80,17 +181,19 @@ export function createIntakeRoutes(router) {
       return res.status(409).json({ error: 'Already submitted.' })
     }
 
-    record.submission = {
+    const submission = {
       data: req.body,
       submittedAt: new Date().toISOString(),
     }
 
-    res.json({ ok: true, submittedAt: record.submission.submittedAt })
+    await dbUpdate(req.params.token, { submission })
+
+    res.json({ ok: true, submittedAt: submission.submittedAt })
   })
 
   // Doctor checks intake status
-  router.get('/api/intake-tokens/:token/status', (req, res) => {
-    const record = tokens.get(req.params.token)
+  router.get('/api/intake-tokens/:token/status', async (req, res) => {
+    const record = await dbFind(req.params.token)
 
     if (!record) {
       return res.status(404).json({ error: 'Token not found.' })
@@ -109,14 +212,14 @@ export function createIntakeRoutes(router) {
   })
 
   // Doctor revokes an intake link
-  router.delete('/api/intake-tokens/:token', (req, res) => {
-    const record = tokens.get(req.params.token)
+  router.delete('/api/intake-tokens/:token', async (req, res) => {
+    const record = await dbFind(req.params.token)
 
     if (!record) {
       return res.status(404).json({ error: 'Token not found.' })
     }
 
-    record.revoked = true
+    await dbUpdate(req.params.token, { revoked: true })
     res.json({ ok: true })
   })
 
