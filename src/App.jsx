@@ -350,8 +350,16 @@ function App() {
           'Review this chart snapshot. When you are ready, request AI treatment options to compare regimens.',
       }
     }
-    return SECTION_HEADER[activeSection]
-  }, [activeSection, librarySelectedEntry])
+    
+    const meta = { ...SECTION_HEADER[activeSection] }
+    if (activeSection === SECTION.SIMULATION && profile?.patientName) {
+      const firstName = profile.patientName.split(' ')[0]
+      meta.title = `Projected outlook for ${firstName}`
+      meta.description = `Generate a customized multi-week predictive scenario detailing exactly how ${firstName} will respond to the selected regimen.`
+    }
+    
+    return meta
+  }, [activeSection, librarySelectedEntry, profile])
 
   const beginFlow = useCallback(async () => {
     setView(VIEW.LOADING)
