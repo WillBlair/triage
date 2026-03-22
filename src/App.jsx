@@ -104,6 +104,7 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
+    setThinkingText('')
     setError('')
     setIsParsing(false)
     setIsLoadingRecommendations(false)
@@ -137,6 +138,7 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
+    setThinkingText('')
     setIsLoadingRecommendations(true)
     try {
       const nextRecommendations = await getRecommendations(entry.profile)
@@ -162,6 +164,7 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
+    setThinkingText('')
     setIsParsing(true)
     setIsLoadingRecommendations(false)
 
@@ -370,6 +373,7 @@ function App() {
                   onSelect={(drug) => {
                     setSelectedDrug(drug)
                     setSimulation(null)
+                    setThinkingText('')
                   }}
                 />
               ) : null}
