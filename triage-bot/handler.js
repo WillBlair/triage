@@ -118,6 +118,7 @@ export async function handleFreeText(userId, freeText) {
     freeText,
     emergencyFlag,
     prescriptionId: session.prescriptionId ?? null,
+    claudeResponse,
   });
 
   return {
