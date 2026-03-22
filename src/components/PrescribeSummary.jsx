@@ -80,8 +80,6 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
     lines.push(`${pharmacy.name} — ${pharmacy.detail}`)
     lines.push('')
   }
-  lines.push('— Clinician review & sign-off required before any prescription is placed')
-  lines.push('— Receiving pharmacy / recipient verification: __________________  Date: ______')
   return lines.join('\n')
 }
 
@@ -144,17 +142,7 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation, pa
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Draft handoff excerpt
-          </p>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-            Condensed from the eight-week monitoring scenario so you can paste draft text into your
-            EHR, fax cover sheet, or pharmacy message. Verify before acting and complete real
-            prescribing and sign-off outside this prototype.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={handleCopy}

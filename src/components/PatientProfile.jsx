@@ -3,6 +3,8 @@ const MOCK_PATIENT = {
   sex: 'Female',
   dob: '12/04/1985',
   mrn: '4821',
+  email: 'jane.doe@example.com',
+  phone: '(555) 234-5678',
   concerns: ['Hypertension'],
   notes: 'Patient reports morning headaches, high-sodium diet.',
   encounterDate: '18/03/2026',
@@ -136,6 +138,10 @@ export default function PatientProfile({ onBack }) {
             <DetailRow label="DOB" value={patient.dob} />
             <DetailRow label="MRN" value={patient.mrn} />
           </dl>
+          <dl className="mt-3 grid grid-cols-2 gap-4 border-t border-slate-100 pt-3">
+            <DetailRow label="Email" value={patient.email} />
+            {patient.phone && <DetailRow label="Phone" value={patient.phone} />}
+          </dl>
         </div>
 
         {/* Clinical concern */}
@@ -208,6 +214,8 @@ export default function PatientProfile({ onBack }) {
             <DetailRow label="Date of birth" value={patient.dob} />
             <DetailRow label="Sex" value={patient.sex} />
             <DetailRow label="MRN" value={patient.mrn} />
+            <DetailRow label="Email" value={patient.email} />
+            {patient.phone && <DetailRow label="Phone" value={patient.phone} />}
             <DetailRow label="Latest encounter" value={patient.encounterDate} />
             <DetailRow label="Session label" value={patient.sessionLabel} />
             <DetailRow label="Chart type" value={patient.chartType} />

@@ -70,3 +70,13 @@ export async function runSimulation(profile, recommendation, onEvent) {
     }
   }
 }
+
+export async function savePrescription({ doctorId, patientProfile, selectedDrug, allRecommendations, simulation }) {
+  const response = await fetch('/api/prescriptions', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ doctorId, patientProfile, selectedDrug, allRecommendations, simulation }),
+  })
+
+  return readJson(response)
+}

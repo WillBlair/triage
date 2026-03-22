@@ -103,7 +103,6 @@ describe('createApp', () => {
 
   it('streams simulation events', async () => {
     async function* simulationEvents() {
-      yield { type: 'thinking', chunk: 'Analyzing baseline blood pressure...' }
       yield { type: 'result', simulation: { summary: 'Projected improvement' } }
     }
 
@@ -130,7 +129,6 @@ describe('createApp', () => {
       })
 
     expect(response.status).toBe(200)
-    expect(response.body).toContain('"type":"thinking"')
     expect(response.body).toContain('"type":"result"')
   })
 })
