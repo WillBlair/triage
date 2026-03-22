@@ -62,9 +62,9 @@ const SECTION_HEADER = {
     description: '',
   },
   [SECTION.FOLLOW_UP]: {
-    kicker: 'Check-ins',
+    kicker: 'Care plan',
     title: 'Follow up',
-    description: 'Review patient check-in responses, symptom reports, and emergency flags from Triage.',
+    description: 'Check-in status and real-time patient responses.',
   },
   [SECTION.SETTINGS]: {
     kicker: 'Workspace',
@@ -619,14 +619,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <FollowUpDashboard
-                  savedPatients={savedPatients}
-                  prescriptions={prescriptions}
-                  onOpenPatientDetail={(entry) => {
-                    setLibrarySelectedEntry(entry)
-                    setActiveSection(SECTION.PROFILES)
-                  }}
-                />
+                <FollowUpDashboard />
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
