@@ -1,11 +1,5 @@
 import ProfileCard from './ProfileCard'
 
-export const DEFAULT_INTAKE_FORM = {
-  visitDate: '',
-  sessionLabel: '',
-  documentType: 'discharge',
-}
-
 const DOCUMENT_TYPES = [
   { value: 'discharge', label: 'Discharge summary' },
   { value: 'clinic', label: 'Clinic / ambulatory note' },

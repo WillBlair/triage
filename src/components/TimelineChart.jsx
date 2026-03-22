@@ -5,15 +5,17 @@ function ProjectionLoading({ regimenLabel }) {
   const bars = [32, 48, 41, 56, 50, 64, 58, 72]
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-[1.75rem] border-2 border-slate-200/90 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            8-week projection
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+            8-week projected trajectory
           </p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-900">Building timeline…</h3>
+          <h3 className="mt-1 text-xl font-semibold text-slate-900">Building scenario timeline…</h3>
           {regimenLabel ? (
-            <p className="mt-1 text-sm text-slate-600">{regimenLabel}</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Selected regimen: <span className="font-medium text-slate-800">{regimenLabel}</span>
+            </p>
           ) : null}
         </div>
         <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
@@ -21,7 +23,7 @@ function ProjectionLoading({ regimenLabel }) {
         </span>
       </div>
       <div
-        className="flex h-[280px] items-end justify-between gap-1.5 rounded-2xl border border-slate-100 bg-linear-to-b from-slate-50 to-white px-4 pb-8 pt-6 sm:gap-2 sm:px-8"
+        className="flex h-[min(360px,45vh)] min-h-[260px] items-end justify-between gap-1.5 rounded-2xl border border-slate-100 bg-linear-to-b from-slate-50 to-white px-4 pb-8 pt-6 sm:gap-2 sm:px-8"
         aria-hidden
       >
         {bars.map((pct, index) => (
@@ -40,7 +42,7 @@ function ProjectionLoading({ regimenLabel }) {
         ))}
       </div>
       <p className="mt-3 text-center text-xs text-slate-500">
-        Fitting the curve to your selected regimen…
+        Drafting the educational follow-up curve for your selected option…
       </p>
     </div>
   )
@@ -165,29 +167,59 @@ function TimelineChart({ simulation, isRunning = false, regimenLabel = '' }) {
 
   if (!simulation) {
     return (
-      <div className="flex min-h-[340px] flex-col items-center justify-center gap-2 rounded-[1.75rem] border border-slate-200 bg-slate-50 px-6 text-center text-sm text-slate-500">
-        <p className="font-medium text-slate-700">No projection yet</p>
-        <p>Run the simulation to plot the eight-week course; risks and pearls fill in underneath.</p>
+      <div className="flex min-h-[min(360px,50vh)] flex-col items-center justify-center gap-3 rounded-[1.75rem] border-2 border-dashed border-slate-200 bg-linear-to-b from-slate-50/80 to-white px-6 py-10 text-center text-sm text-slate-500">
+        <p className="font-semibold text-slate-800">Eight-week trajectory chart</p>
+        <p className="max-w-md leading-relaxed">
+          {regimenLabel ? (
+            <>
+              Run the scenario to plot the projected course for{' '}
+              <span className="font-medium text-slate-700">{regimenLabel}</span>. The shaded band is
+              the illustrative target range; supporting detail lives in the sections below the chart.
+            </>
+          ) : (
+            <>
+              Choose a contrast option under Drug comparison, then run the scenario to see an
+              educational projection and supporting monitoring notes.
+            </>
+          )}
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            8-week projection
+    <div className="rounded-[1.75rem] border-2 border-slate-200/90 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+            8-week projected trajectory
           </p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-900">
+          <h3 className="mt-1 text-xl font-semibold text-slate-900 sm:text-2xl">
             {simulation.projectedMetric}
           </h3>
+          {regimenLabel ? (
+            <p className="mt-1 text-sm text-slate-600">
+              For selected regimen:{' '}
+              <span className="font-medium text-slate-800">{regimenLabel}</span>
+            </p>
+          ) : null}
+          {simulation.summary ? (
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">{simulation.summary}</p>
+          ) : null}
         </div>
-        <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-          Target {simulation.targetRange.low}-{simulation.targetRange.high}
-        </span>
+        {simulation.targetRange ? (
+          <span className="shrink-0 self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-100">
+            Illustrative target {simulation.targetRange.low}–{simulation.targetRange.high}
+          </span>
+        ) : null}
       </div>
-      <svg ref={svgRef} className="h-[340px] w-full" />
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-b from-slate-50/50 to-white ring-1 ring-slate-100">
+        <svg ref={svgRef} className="h-[min(420px,52vh)] min-h-[300px] w-full sm:min-h-[340px]" />
+      </div>
+      <p className="mt-3 text-center text-xs text-slate-500">
+        Educational projection for discussion only — not a individualized forecast or treatment
+        directive.
+      </p>
     </div>
   )
 }
