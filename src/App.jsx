@@ -118,14 +118,20 @@ function App() {
     const userId = session.user.id
     setCurrentUserId(userId)
     setDoctorEmail(session.user.email || '')
-    const saved = await fetchDoctorProfile(userId)
-    if (saved) {
-      setDoctorProfile(saved.doctorProfile)
-      setWorkspaceName(saved.workspaceName)
-      setOnboardingComplete(saved.onboarded)
-    } else {
-      setDoctorProfile(null)
-      setWorkspaceName('')
+    try {
+      const saved = await fetchDoctorProfile(userId)
+      if (saved) {
+        setDoctorProfile(saved.doctorProfile)
+        setWorkspaceName(saved.workspaceName)
+        setOnboardingComplete(saved.onboarded)
+      } else {
+        setDoctorProfile(null)
+        setWorkspaceName('')
+        setOnboardingComplete(false)
+      }
+    } catch (err) {
+      console.error('Failed to load doctor profile:', err)
+      // Treat as new user so the app doesn't get stuck
       setOnboardingComplete(false)
     }
   }, [])
@@ -139,12 +145,15 @@ function App() {
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (isEmailConfirmation) {
-        // User clicked the confirmation link — sign them out so they must log in explicitly
         supabase.auth.signOut()
         setView(VIEW.EMAIL_CONFIRMED)
       } else if (session) {
         hasSignedIn.current = true
-        await syncUserData(session)
+        try {
+          await syncUserData(session)
+        } catch {
+          // Profile fetch failed — still let user through
+        }
         setView(VIEW.WORKSPACE)
       } else {
         setView(VIEW.LANDING)
@@ -156,9 +165,12 @@ function App() {
       // tab focus, token refresh, etc. — ignore those to keep the UI stable.
       if (event === 'SIGNED_IN' && session && !hasSignedIn.current) {
         hasSignedIn.current = true
-        await syncUserData(session)
+        try {
+          await syncUserData(session)
+        } catch {
+          // Profile fetch failed — still let user through
+        }
         setView(VIEW.WORKSPACE)
-        // Don't reset activeSection — let sessionStorage preserve it for returning users
       }
     })
 
