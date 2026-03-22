@@ -12,6 +12,7 @@ import DoctorProfilePanel from './components/DoctorProfilePanel'
 import PlaceholderSection from './components/PlaceholderSection'
 import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
+import ErrorBoundary from './components/ErrorBoundary'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
 import ProgressStepper from './components/ProgressStepper'
@@ -494,6 +495,7 @@ function App() {
                     : 'overflow-y-auto overscroll-contain px-6 py-5 sm:py-6'
               }`}
             >
+              <ErrorBoundary>
               {activeSection === SECTION.ADD_PATIENT ? (
                 <AddPatientIntake
                   fileName={fileName}
@@ -594,6 +596,7 @@ function App() {
                   onUpdateProfile={handleUpdateDoctorProfile}
                 />
               ) : null}
+              </ErrorBoundary>
             </div>
 
             <footer className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
