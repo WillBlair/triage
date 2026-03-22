@@ -8,6 +8,10 @@ export default async function handler(req, res) {
       globalThis.Path2D = class Path2D {}
     }
 
+    // Disable pdfjs worker before any pdf-parse import
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    pdfjs.GlobalWorkerOptions.workerSrc = ''
+
     const { createApp } = await import('../server/app.js')
     const { createAiService } = await import('../server/recommendations.js')
 
