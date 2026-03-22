@@ -609,7 +609,12 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
-                <SettingsPanel />
+                <SettingsPanel
+                  doctorProfile={doctorProfile}
+                  doctorEmail={doctorEmail}
+                  workspaceName={workspaceName}
+                  onLogout={returnToLanding}
+                />
               ) : null}
 
               {activeSection === SECTION.DOCTOR_PROFILE ? (
