@@ -96,5 +96,27 @@
     "freeText": "There is also internal bleeding and fatigue",
     "emergencyFlag": false,
     "prescriptionId": "a6ddf5d4-9924-48e2-9815-ccca9fe6dc6e"
+  },
+  {
+    "timestamp": "2026-03-22T19:18:19.762Z",
+    "userHash": "7977cfed10d48bbd45b18dc182825bf46163a633235dea476940c9dc589f19d9",
+    "symptoms": [
+      "fatigue",
+      "headache"
+    ],
+    "freeText": "I have a bad headache, i feel dizzy what should i do? I think my blood pressure might be low.",
+    "emergencyFlag": false,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T19:32:11.414Z",
+    "userHash": "bb82030dbc2bcaba32a90bf2e207a84a856fc5f033b77c480836ab6f77f40f19",
+    "symptoms": [
+      "nausea",
+      "dizziness"
+    ],
+    "freeText": "I feel a bit weak",
+    "emergencyFlag": false,
+    "prescriptionId": "rx_abc"
   }
 ]

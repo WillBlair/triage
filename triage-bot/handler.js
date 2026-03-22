@@ -8,7 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { SYMPTOMS, shouldFlag } from "./checklist.js";
 import {
   SYSTEM_PROMPT,
-  GREETING,
+  personalizedGreeting,
   FOLLOWUP_PROMPT,
   EMERGENCY_MESSAGE,
   CLOSING_MESSAGE,
@@ -63,9 +63,14 @@ async function buildClaudeResponse(symptoms, freeText) {
  * @param {string|null} [prescriptionId] — Supabase prescription UUID, if triggered by Realtime
  * @returns {{ greeting: string, symptoms: { value: string, label: string }[] }}
  */
-export function startCheckin(userId, prescriptionId = null) {
-  sessions.set(userId, { stage: "checklist", symptoms: [], prescriptionId });
-  return { greeting: GREETING, symptoms: SYMPTOMS };
+/**
+ * @param {string}      userId
+ * @param {string|null} [prescriptionId]
+ * @param {string|null} [patientName]    — Display name sourced from Discord or a DB lookup.
+ */
+export function startCheckin(userId, prescriptionId = null, patientName = null) {
+  sessions.set(userId, { stage: "checklist", symptoms: [], prescriptionId, patientName });
+  return { greeting: personalizedGreeting(patientName), symptoms: SYMPTOMS };
 }
 
 /**
@@ -101,9 +106,8 @@ export function handleSymptomSelection(userId, selectedValues) {
 export async function handleFreeText(userId, freeText) {
   const session = sessions.get(userId) ?? { stage: "freetext", symptoms: [], prescriptionId: null };
 
-  // Mark done immediately to prevent re-entry if a second message arrives
-  // before the async Claude call and logging complete.
-  session.stage = "done";
+  // Keep stage as "freetext" so the 5-minute inactivity window in index.js
+  // can accept follow-up messages before closing the session.
   sessions.set(userId, session);
 
   const emergencyFlag = shouldFlag(session.symptoms, freeText);
@@ -111,6 +115,9 @@ export async function handleFreeText(userId, freeText) {
   const [claudeResponse] = await Promise.all([
     buildClaudeResponse(session.symptoms, freeText),
   ]);
+
+  session.lastClaudeResponse = claudeResponse;
+  sessions.set(userId, session);
 
   await logSession({
     userId,
@@ -125,8 +132,34 @@ export async function handleFreeText(userId, freeText) {
     claudeResponse,
     emergencyFlag,
     emergencyMessage: emergencyFlag ? EMERGENCY_MESSAGE : null,
-    closing: CLOSING_MESSAGE,
   };
+}
+
+/**
+ * Finalises a session: logs it and marks it done.
+ * Called by the platform adapter (index.js) when the inactivity timeout fires.
+ *
+ * @param {string} userId
+ * @param {string} [lastFreeText]
+ * @returns {Promise<{ closing: string }>}
+ */
+export async function finalizeSession(userId, lastFreeText = "") {
+  const session = sessions.get(userId);
+  if (!session) return { closing: CLOSING_MESSAGE };
+
+  session.stage = "done";
+  sessions.set(userId, session);
+
+  await logSession({
+    userId,
+    symptoms: session.symptoms,
+    freeText: lastFreeText,
+    emergencyFlag: shouldFlag(session.symptoms, lastFreeText),
+    prescriptionId: session.prescriptionId ?? null,
+    claudeResponse: session.lastClaudeResponse,
+  });
+
+  return { closing: CLOSING_MESSAGE };
 }
 
 /**

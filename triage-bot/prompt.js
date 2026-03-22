@@ -13,8 +13,15 @@ Words you never use: I can't do that, you need to, obviously, just, that's not p
 
 Keep all responses concise and broken into short paragraphs. Never send walls of text.`;
 
-export const GREETING =
-  "Hi! My name is Triage. \uD83D\uDE0A I'm checking in on you to see how you're doing post-appointment. This will only take a few minutes.";
+/**
+ * Personalised greeting that uses the patient's name when available.
+ * @param {string|null} name
+ */
+export const personalizedGreeting = (name) =>
+  `Hi${name ? ` ${name}` : ""}! My name is Triage. \uD83D\uDE0A I'm checking in on you to see how you're doing post-appointment. This will only take a few minutes.`;
+
+/** @deprecated Use personalizedGreeting() instead. Kept for backwards compatibility. */
+export const GREETING = personalizedGreeting(null);
 
 export const FOLLOWUP_PROMPT =
   "Thank you for sharing that. Would you like to add anything else in your own words? Every detail helps your care team.";
@@ -24,3 +31,9 @@ export const EMERGENCY_MESSAGE =
 
 export const CLOSING_MESSAGE =
   "You're all done! \uD83C\uDF89 Your responses have been sent to your care team. Take care \u2014 and don't hesitate to reach out if anything changes. \uD83D\uDC99";
+
+export const STILL_THERE_MESSAGE =
+  "Are you still there? \uD83D\uDC4B Just checking in \u2014 no rush at all. Would you like to keep chatting, wrap up, or be connected to your care team?";
+
+export const DOCTOR_TRANSFER_MESSAGE =
+  "Understood! \uD83E\uDE7A I've noted your request and your care team will be in touch with you shortly. If anything feels urgent before then, please don't hesitate to call the clinic directly \u2014 or dial 911 in an emergency. Take care! \uD83D\uDC99";
