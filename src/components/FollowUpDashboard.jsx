@@ -423,9 +423,8 @@ export default function FollowUpDashboard({ doctorId }) {
     return merged.sort(sortByStatus)
   }, [allPatients, prescriptions])
 
-  /* ── Metrics (only count patients with prescriptions) ── */
-  const withRx = rows.filter((r) => r.prescription)
-  const total = withRx.length
+  /* ── Metrics ── */
+  const total = rows.length
   const completed = rows.filter((r) => getStatus(r) === 'completed').length
   const flagged = rows.filter((r) => getStatus(r) === 'flagged').length
 
@@ -447,7 +446,7 @@ export default function FollowUpDashboard({ doctorId }) {
       <div className="flex flex-col gap-4">
         {/* ── Metric Cards ── */}
         <div className="grid grid-cols-3 gap-3">
-          <MetricCard label="Total sent" value={total} />
+          <MetricCard label="Total patients" value={total} />
           <MetricCard label="Completed" value={completed} color="teal" />
           <MetricCard label="Flagged" value={flagged} color={flagged > 0 ? 'red' : 'slate'} />
         </div>
