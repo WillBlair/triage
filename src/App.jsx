@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { SECTION } from './constants/navigation'
-import { DEFAULT_INTAKE_FORM } from './constants/intake'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
 import PatientLibraryDetail from './components/PatientLibraryDetail'
