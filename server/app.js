@@ -16,6 +16,7 @@ export function createApp({ aiService }) {
   const app = express()
 
   app.use(cors())
+  app.use(express.json({ limit: '2mb' }))
   createIntakeRoutes(app)
 
   // ── Telegram Webhook ──

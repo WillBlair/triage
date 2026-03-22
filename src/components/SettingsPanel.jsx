@@ -37,7 +37,7 @@ export default function SettingsPanel() {
         <ul className="mt-3 space-y-2 text-sm text-slate-600">
           <li>Upload a patient chart to extract a structured profile</li>
           <li>Compare three AI-generated drug regimens side by side</li>
-          <li>Run an 8-week BP projection with risk scores and interaction flags</li>
+          <li>Run an 8-week BP projection from the monitoring chart</li>
           <li>Copy a draft handoff summary for pharmacy or EHR</li>
         </ul>
         <p className="mt-4 text-xs text-slate-400">

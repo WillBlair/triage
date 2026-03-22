@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DEFAULT_INTAKE_FORM } from './constants/intake'
 import { SECTION } from './constants/navigation'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
@@ -36,8 +35,7 @@ const SECTION_HEADER = {
   [SECTION.ADD_PATIENT]: {
     kicker: 'Intake',
     title: 'Add new patient',
-    description:
-      'Create a draft profile, send a patient intake, then upload and merge a chart.',
+    description: '',
   },
   [SECTION.PROFILES]: {
     kicker: 'Records',
@@ -54,7 +52,7 @@ const SECTION_HEADER = {
     kicker: 'Monitor',
     title: 'Monitoring & follow-up scenario',
     description:
-      'Generate an educational multi-week scenario for the selected contrast option, then review projected trends, risks, and follow-up pearls.',
+      'Generate an educational multi-week scenario for the selected contrast option and review the projected trajectory in the chart.',
   },
   [SECTION.PRESCRIPTION]: {
     kicker: 'Handoff',
@@ -97,7 +95,6 @@ function App() {
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
   const [isConfirmed, setIsConfirmed] = useState(false)
-  const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
   const [librarySelectedEntry, setLibrarySelectedEntry] = useState(null)
   const [onboardingComplete, setOnboardingComplete] = useState(false)
   const [doctorProfile, setDoctorProfile] = useState(null)
@@ -177,7 +174,6 @@ function App() {
     setIsParsing(false)
     setIsLoadingRecommendations(false)
     setIsRunningSimulation(false)
-    setIntakeForm({ ...DEFAULT_INTAKE_FORM })
     setLibrarySelectedEntry(null)
   }, [])
 
@@ -495,8 +491,6 @@ function App() {
             >
               {activeSection === SECTION.ADD_PATIENT ? (
                 <AddPatientIntake
-                  intakeForm={intakeForm}
-                  onIntakeChange={setIntakeForm}
                   fileName={fileName}
                   profile={profile}
                   isParsing={isParsing}
@@ -608,9 +602,6 @@ function App() {
                 ) : null}
                 {activeSection === SECTION.ADD_PATIENT && intakeReady ? (
                   <span>Chart summary and comparison rows are ready. Continue when the snapshot looks right.</span>
-                ) : null}
-                {activeSection === SECTION.ADD_PATIENT && !intakeReady && !isParsing && !isLoadingRecommendations ? (
-                  <span>Follow the stepper: create a draft, send intake, then upload a chart.</span>
                 ) : null}
                 {activeSection === SECTION.RECOMMENDATIONS && isLoadingRecommendations ? (
                   <span>Loading treatment contrast…</span>

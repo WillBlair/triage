@@ -7,16 +7,6 @@ const STEPS = [
   { id: 'chart-merge', label: 'Chart & merge' },
 ]
 
-const DOCUMENT_TYPES = [
-  { value: 'discharge', label: 'Discharge summary' },
-  { value: 'clinic', label: 'Clinic / ambulatory note' },
-  { value: 'hp', label: 'H&P or consult' },
-  { value: 'labs_only', label: 'Labs / imaging packet' },
-  { value: 'other', label: 'Other' },
-]
-
-const CONCERN_OPTIONS = ['Hypertension', 'Hypotension']
-
 const INTAKE_SECTION_DEFS = [
   { id: 'homeBp', label: 'Home BP readings', defaultOn: true },
   { id: 'symptoms', label: 'Symptoms checklist', defaultOn: true },
@@ -122,25 +112,11 @@ function SectionToggle({ id, label, checked, onChange }) {
 
 function StepBasics({ draft, onDraftChange }) {
   const patch = (updates) => onDraftChange((prev) => ({ ...prev, ...updates }))
-  const toggleConcern = (concern) => {
-    const current = draft.concerns || []
-    const next = current.includes(concern)
-      ? current.filter((c) => c !== concern)
-      : [...current, concern]
-    patch({ concerns: next })
-  }
-
   return (
     <div className="grid gap-6">
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
         <h3 className="text-sm font-semibold text-slate-900">Patient identifiers</h3>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Required identifiers for a draft profile. More detail can come from the chart or patient intake.
-        </p>
-        <p className="mt-2 text-xs font-medium text-slate-600">
-          Patient name, date of birth, sex, and Telegram handle are required to continue.
-        </p>
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <div>
             <FieldLabel id="patient-name">Patient name</FieldLabel>
             <input
@@ -207,8 +183,6 @@ function StepSendIntake({
   onGenerateLink,
   onRevokeLink,
 }) {
-  const [message, setMessage] = useState('')
-  const [expiryHours, setExpiryHours] = useState(48)
   const [copied, setCopied] = useState(false)
 
   const toggleSection = (id, value) => {
@@ -216,7 +190,7 @@ function StepSendIntake({
   }
 
   const handleGenerate = () => {
-    onGenerateLink({ message, expiryHours })
+    onGenerateLink({ message: '', expiryHours: 48 })
   }
 
   const handleCopy = async () => {
@@ -251,43 +225,6 @@ function StepSendIntake({
         </div>
       </div>
 
-      {/* Message + expiry */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-        <h3 className="text-sm font-semibold text-slate-900">Delivery options</h3>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Generate a secure link. Send it yourself via your clinic&apos;s SMS, email, or patient portal.
-        </p>
-        <div className="mt-5 grid gap-5">
-          <div>
-            <FieldLabel id="intake-message" optional>Message to patient</FieldLabel>
-            <textarea
-              id="intake-message"
-              rows={2}
-              placeholder="e.g. Please complete this before your Thursday appointment..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              disabled={!!intakeLink}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 disabled:bg-slate-50 disabled:text-slate-400"
-            />
-          </div>
-          <div>
-            <FieldLabel id="intake-expiry">Link expires after</FieldLabel>
-            <select
-              id="intake-expiry"
-              value={expiryHours}
-              onChange={(e) => setExpiryHours(Number(e.target.value))}
-              disabled={!!intakeLink}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-200 disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value={24}>24 hours</option>
-              <option value={48}>48 hours</option>
-              <option value={72}>72 hours</option>
-              <option value={168}>7 days</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       {/* Link generation / display */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
         <h3 className="text-sm font-semibold text-slate-900">Magic link</h3>
@@ -302,12 +239,12 @@ function StepSendIntake({
               disabled={!basicsComplete}
               className="mt-4 w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Generate secure link
+              Send intake form and generate secure link
             </button>
             {!basicsComplete ? (
               <p className="mt-2 text-xs text-slate-500">
                 Go back to <strong className="font-semibold text-slate-700">Basics</strong> and fill patient name,
-                date of birth, sex, and MRN to generate a link.
+                date of birth, sex, and Telegram handle to send the form and create a link.
               </p>
             ) : null}
           </>
@@ -357,12 +294,18 @@ function StepSendIntake({
 
 /* ── Step 3: Chart & merge ── */
 
-function IntakeStatusPanel({ intakeLink, intakeSubmission, onRefreshStatus }) {
+function IntakeStatusAlert({ intakeLink, intakeSubmission, onRefreshStatus }) {
   if (!intakeLink) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 px-5 py-8 text-center">
-        <p className="text-sm text-slate-400">No intake link sent yet.</p>
-        <p className="mt-1 text-xs text-slate-400">Go back to &quot;Send intake&quot; to generate one.</p>
+      <div
+        role="status"
+        className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl border border-dashed border-slate-200 bg-slate-50/90 px-4 py-2.5 text-sm text-slate-600"
+      >
+        <span className="font-semibold text-slate-800">Patient intake</span>
+        <span className="text-slate-300" aria-hidden>
+          ·
+        </span>
+        <span>No link yet — use <span className="font-medium text-slate-700">Send intake</span> to generate one.</span>
       </div>
     )
   }
@@ -370,37 +313,41 @@ function IntakeStatusPanel({ intakeLink, intakeSubmission, onRefreshStatus }) {
   const submitted = !!intakeSubmission
 
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${submitted ? 'border-emerald-200 bg-emerald-50/40' : 'border-amber-200 bg-amber-50/30'}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className={`text-xs font-semibold uppercase tracking-wide ${submitted ? 'text-emerald-600' : 'text-amber-600'}`}>
-            {submitted ? 'Submitted' : 'Awaiting patient'}
+    <div
+      role="status"
+      className={`rounded-xl border px-4 py-2.5 shadow-sm ${
+        submitted ? 'border-emerald-200 bg-emerald-50/50' : 'border-amber-200 bg-amber-50/50'
+      }`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className={`text-sm font-semibold ${submitted ? 'text-emerald-900' : 'text-amber-900'}`}>
+            {submitted ? 'Intake received' : 'Waiting for patient intake'}
           </p>
-          <p className="mt-1 text-sm font-medium text-slate-800">
-            Patient intake {submitted ? 'received' : 'pending'}
-          </p>
-          {submitted && (
-            <p className="mt-0.5 text-xs text-slate-500">
-              Submitted {new Date(intakeSubmission.submittedAt).toLocaleString()}
+          {submitted ? (
+            <p className="text-xs text-emerald-800/80">
+              {new Date(intakeSubmission.submittedAt).toLocaleString()}
             </p>
+          ) : (
+            <p className="text-xs text-amber-800/70">Refresh after the patient submits.</p>
           )}
         </div>
-        {!submitted && (
+        {!submitted ? (
           <button
             type="button"
             onClick={onRefreshStatus}
-            className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+            className="shrink-0 rounded-lg border border-amber-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-sm transition hover:bg-amber-50/80"
           >
             Refresh
           </button>
-        )}
+        ) : null}
       </div>
       {submitted && intakeSubmission.data && (
-        <details className="mt-3">
-          <summary className="cursor-pointer text-xs font-semibold text-emerald-700 hover:underline">
+        <details className="mt-2 border-t border-emerald-200/50 pt-2">
+          <summary className="cursor-pointer text-xs font-semibold text-emerald-800 hover:underline">
             Preview patient responses
           </summary>
-          <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-emerald-100 bg-white p-4 text-sm">
+          <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-emerald-100 bg-white p-3 text-sm">
             {intakeSubmission.data.bpReadings?.length > 0 && (
               <div className="mb-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Home BP readings</p>
@@ -443,8 +390,6 @@ function IntakeStatusPanel({ intakeLink, intakeSubmission, onRefreshStatus }) {
 }
 
 function StepChartMerge({
-  intakeForm,
-  onIntakeChange,
   intakeLink,
   intakeSubmission,
   onRefreshStatus,
@@ -452,19 +397,14 @@ function StepChartMerge({
   merged,
   ...profileCardProps
 }) {
-  const patch = (updates) => onIntakeChange((prev) => ({ ...prev, ...updates }))
-
-  const DOCUMENT_TYPES = [
-    { value: 'discharge', label: 'Discharge summary' },
-    { value: 'clinic', label: 'Clinic / ambulatory note' },
-    { value: 'hp', label: 'H&P or consult' },
-    { value: 'labs_only', label: 'Labs / imaging packet' },
-    { value: 'other', label: 'Other' },
-  ]
-
   return (
-    <div className="grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-10">
-      {/* Left: Doctor PDF upload + extract */}
+    <div className="flex min-w-0 flex-col gap-5">
+      <IntakeStatusAlert
+        intakeLink={intakeLink}
+        intakeSubmission={intakeSubmission}
+        onRefreshStatus={onRefreshStatus}
+      />
+
       <div className="min-w-0 space-y-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Chart document & extract</h3>
@@ -475,86 +415,27 @@ function StepChartMerge({
         <ProfileCard {...profileCardProps} embedded />
       </div>
 
-      {/* Right: Encounter context + intake status */}
-      <div className="min-w-0 space-y-5">
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-6">
-          <div className="border-b border-slate-100 pb-4">
-            <h3 className="text-sm font-semibold text-slate-900">Encounter context</h3>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              Session metadata and clinical framing.
-            </p>
-          </div>
-          <div className="mt-5 grid gap-5">
-            <div>
-              <FieldLabel id="intake-visit-date" optional>Visit / encounter date</FieldLabel>
-              <input
-                id="intake-visit-date"
-                type="date"
-                value={intakeForm.visitDate}
-                onChange={(e) => patch({ visitDate: e.target.value })}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
-              />
-            </div>
-            <div>
-              <FieldLabel id="intake-session-label" optional>Session label</FieldLabel>
-              <input
-                id="intake-session-label"
-                type="text"
-                placeholder="e.g. MRN last-4, bed, initials"
-                value={intakeForm.sessionLabel}
-                onChange={(e) => patch({ sessionLabel: e.target.value })}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
-              />
-            </div>
-            <div>
-              <FieldLabel id="intake-doc-type">Chart document type</FieldLabel>
-              <select
-                id="intake-doc-type"
-                value={intakeForm.documentType}
-                onChange={(e) => patch({ documentType: e.target.value })}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
-              >
-                {DOCUMENT_TYPES.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {/* Patient intake status */}
-        <section>
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Patient intake status</h3>
-          <IntakeStatusPanel
-            intakeLink={intakeLink}
-            intakeSubmission={intakeSubmission}
-            onRefreshStatus={onRefreshStatus}
-          />
-        </section>
-
-        {/* Merge button */}
-        {intakeSubmission && profileCardProps.profile && !merged && (
-          <button
-            type="button"
-            onClick={onMerge}
-            className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
-          >
-            Merge intake into profile
-          </button>
-        )}
-        {merged && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-center text-sm font-medium text-emerald-800">
-            Patient intake merged into profile
-          </div>
-        )}
-      </div>
+      {intakeSubmission && profileCardProps.profile && !merged && (
+        <button
+          type="button"
+          onClick={onMerge}
+          className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 sm:w-auto sm:self-start"
+        >
+          Merge intake into profile
+        </button>
+      )}
+      {merged ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-sm font-medium text-emerald-800">
+          Patient intake merged into profile
+        </div>
+      ) : null}
     </div>
   )
 }
 
 /* ── Main component ── */
 
-export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profileCardProps }) {
+export default function AddPatientIntake({ ...profileCardProps }) {
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState({ name: '', dob: '', sex: '', mrn: '', concerns: [], notes: '' })
   const [intakeSections, setIntakeSections] = useState(() => {
@@ -672,8 +553,6 @@ export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profil
       )}
       {step === 2 && (
         <StepChartMerge
-          intakeForm={intakeForm}
-          onIntakeChange={onIntakeChange}
           intakeLink={intakeLink}
           intakeSubmission={intakeSubmission}
           onRefreshStatus={handleRefreshStatus}
