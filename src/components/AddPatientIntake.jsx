@@ -193,44 +193,6 @@ function StepBasics({ draft, onDraftChange }) {
           </div>
         </div>
       </div>
-
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-        <h3 className="text-sm font-semibold text-slate-900">Clinical concern</h3>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Tag the primary concern so intake and recommendations are scoped correctly.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {CONCERN_OPTIONS.map((concern) => {
-            const selected = (draft.concerns || []).includes(concern)
-            return (
-              <button
-                key={concern}
-                type="button"
-                onClick={() => toggleConcern(concern)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  selected
-                    ? 'border-teal-300 bg-teal-50 text-teal-800 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                {selected && <span className="mr-1.5">✓</span>}
-                {concern}
-              </button>
-            )
-          })}
-        </div>
-        <div className="mt-4">
-          <FieldLabel id="patient-notes" optional>Additional notes</FieldLabel>
-          <textarea
-            id="patient-notes"
-            rows={2}
-            placeholder="Anything the AI should know for scoping..."
-            value={draft.notes || ''}
-            onChange={(e) => patch({ notes: e.target.value })}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
-          />
-        </div>
-      </div>
     </div>
   )
 }
