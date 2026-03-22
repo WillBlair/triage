@@ -24,8 +24,11 @@ Return JSON with this shape:
 }
 Only include information supported by the document text. ${JSON_RESPONSE_RULE}`
 
-const RECOMMEND_SYSTEM = `You are a clinical decision support AI.
-Given a structured patient profile, compare exactly 3 plausible drug or regimen options.
+const RECOMMEND_SYSTEM = `You are a clinical decision support AI focused on arterial blood pressure.
+Given a structured patient profile, compare exactly 3 plausible options that address hypertension, hypotension,
+orthostatic symptoms related to antihypertensives, resistant hypertension, or BP diagnostic clarification
+(e.g. out-of-office monitoring) as the profile warrants. Stay within this BP scope—do not pivot to unrelated
+primary disease management (e.g. diabetes-only or pulmonary-only plans) unless the chart lacks any BP angle.
 Return JSON with this shape:
 {
   "overallReasoning": "string — at most 2 short sentences, under 220 characters total",

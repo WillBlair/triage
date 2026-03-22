@@ -273,4 +273,5 @@ function ProfileCard({
   )
 }
 
+export { PatientSnapshot }
 export default ProfileCard

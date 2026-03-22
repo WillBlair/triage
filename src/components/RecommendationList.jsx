@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { sortDrugsByModelFitRank } from '../../lib/sortRecommendationDrugs.js'
+import { drugDemoImageSrc } from '../lib/drugImageMap.js'
 
 function DisclosureChevron({ className = '' }) {
   return (
@@ -19,6 +20,7 @@ function DisclosureChevron({ className = '' }) {
 }
 
 function OptionRow({ rank, drug, isSelected, onSelect }) {
+  const drugArtSrc = drugDemoImageSrc(drug.name)
   const rationale = drug.rationale?.trim() || ''
   const cautions = drug.cautions?.filter(Boolean) ?? []
   const isNominalFit = Boolean(drug.isNominalFit ?? drug.isRecommended)
@@ -51,19 +53,28 @@ function OptionRow({ rank, drug, isSelected, onSelect }) {
           >
             {isSelected && <span className="h-2 w-2 rounded-full bg-white" />}
           </span>
-          <span
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold tabular-nums shadow-sm ring-1 sm:h-14 sm:w-14 sm:text-2xl ${
-              rank === 1
-                ? 'bg-teal-100 text-teal-900 ring-teal-300/70'
-                : 'bg-slate-100 text-slate-800 ring-slate-200'
-            }`}
-            title={
-              rank === 1
-                ? 'Rank 1 — strongest model fit for this patient'
-                : `Rank ${rank} — model fit ordering (lower rank = stronger fit)`
-            }
-          >
-            {rank}
+          <span className="relative shrink-0">
+            <img
+              src={drugArtSrc}
+              alt=""
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-2xl bg-slate-50 object-contain p-1.5 ring-1 ring-slate-200/90 sm:h-16 sm:w-16"
+            />
+            <span
+              className={`absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-xl text-xs font-bold tabular-nums shadow-md ring-2 ring-white sm:h-8 sm:w-8 sm:text-sm ${
+                rank === 1
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-600 text-white'
+              }`}
+              title={
+                rank === 1
+                  ? 'Rank 1 — strongest model fit for this patient'
+                  : `Rank ${rank} — model fit ordering (lower rank = stronger fit)`
+              }
+            >
+              {rank}
+            </span>
           </span>
         </div>
 

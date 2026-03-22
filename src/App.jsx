@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DEFAULT_INTAKE_FORM } from './constants/intake'
 import { SECTION } from './constants/navigation'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
+import PatientLibraryDetail from './components/PatientLibraryDetail'
+import PatientLibraryPanel from './components/PatientLibraryPanel'
 import PlaceholderSection from './components/PlaceholderSection'
 import PrescribeSummary from './components/PrescribeSummary'
 import RecommendationList from './components/RecommendationList'
@@ -32,7 +34,8 @@ const SECTION_HEADER = {
   [SECTION.PROFILES]: {
     kicker: 'Records',
     title: 'Patient profiles',
-    description: 'Open a saved profile when your workspace is connected to persistent storage.',
+    description:
+      'Demo charts focus on hypertension and hypotension. Open one for details, then request AI options. Saved runs would list here once storage exists.',
   },
   [SECTION.RECOMMENDATIONS]: {
     kicker: 'Compare',
@@ -81,6 +84,7 @@ function App() {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
   const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
+  const [librarySelectedEntry, setLibrarySelectedEntry] = useState(null)
 
   const intakeReady = useMemo(
     () => Boolean(profile) && !isParsing && !isLoadingRecommendations,
@@ -104,12 +108,51 @@ function App() {
     setIsLoadingRecommendations(false)
     setIsRunningSimulation(false)
     setIntakeForm({ ...DEFAULT_INTAKE_FORM })
+    setLibrarySelectedEntry(null)
   }, [])
 
   const returnToLanding = useCallback(() => {
     resetWizard()
     setFlowStarted(false)
   }, [resetWizard])
+
+  useEffect(() => {
+    if (activeSection !== SECTION.PROFILES) {
+      setLibrarySelectedEntry(null)
+    }
+  }, [activeSection])
+
+  const openLibraryPatientDetail = useCallback((entry) => {
+    setLibrarySelectedEntry(entry)
+  }, [])
+
+  const requestRecommendationsFromLibraryPatient = useCallback(async (entry) => {
+    if (!entry?.profile) {
+      return
+    }
+    setError('')
+    setFileName(entry.chartLabel)
+    setProfile(entry.profile)
+    setRecommendations(null)
+    setSelectedDrug(null)
+    setSimulation(null)
+    setIsLoadingRecommendations(true)
+    try {
+      const nextRecommendations = await getRecommendations(entry.profile)
+      const sorted = {
+        ...nextRecommendations,
+        drugs: sortDrugsByModelFitRank(nextRecommendations.drugs ?? []),
+      }
+      setRecommendations(sorted)
+      setSelectedDrug(sorted.drugs[0] || null)
+      setLibrarySelectedEntry(null)
+      setActiveSection(SECTION.RECOMMENDATIONS)
+    } catch (recError) {
+      setError(recError instanceof Error ? recError.message : 'Could not load treatment options.')
+    } finally {
+      setIsLoadingRecommendations(false)
+    }
+  }, [])
 
   const handleSelectFile = async (file) => {
     setFileName(file.name)
@@ -167,7 +210,17 @@ function App() {
     }
   }
 
-  const sectionMeta = SECTION_HEADER[activeSection]
+  const sectionMeta = useMemo(() => {
+    if (activeSection === SECTION.PROFILES && librarySelectedEntry) {
+      return {
+        kicker: 'Records',
+        title: librarySelectedEntry.profile.patientName || 'Patient details',
+        description:
+          'Review this chart snapshot. When you are ready, request AI treatment options to compare regimens.',
+      }
+    }
+    return SECTION_HEADER[activeSection]
+  }, [activeSection, librarySelectedEntry])
 
   const beginFlow = useCallback(() => {
     setFlowStarted(true)
@@ -222,7 +275,9 @@ function App() {
           <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-50/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
             <div
               className={`border-b border-slate-100 bg-linear-to-r from-teal-50/40 via-white to-slate-50/50 px-6 sm:px-8 ${
-                activeSection === SECTION.RECOMMENDATIONS ? 'py-4 sm:py-4' : 'py-6 sm:py-6'
+                activeSection === SECTION.RECOMMENDATIONS || activeSection === SECTION.PROFILES
+                  ? 'py-4 sm:py-4'
+                  : 'py-6 sm:py-6'
               }`}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
@@ -238,7 +293,7 @@ function App() {
                 <div className="min-w-0 flex-1">
                   <h2
                     className={`font-serif font-semibold text-slate-950 ${
-                      activeSection === SECTION.RECOMMENDATIONS
+                      activeSection === SECTION.RECOMMENDATIONS || activeSection === SECTION.PROFILES
                         ? 'text-xl sm:text-2xl'
                         : 'text-2xl sm:text-3xl'
                     }`}
@@ -268,7 +323,9 @@ function App() {
               className={`min-h-0 flex-1 sm:px-8 ${
                 activeSection === SECTION.RECOMMENDATIONS
                   ? 'flex flex-col overflow-y-auto overscroll-contain px-6 py-3 sm:py-4'
-                  : 'overflow-y-auto overscroll-contain px-6 py-5 sm:py-6'
+                  : activeSection === SECTION.PROFILES
+                    ? 'flex min-h-0 flex-col overflow-y-auto overscroll-contain px-6 py-3 sm:py-4'
+                    : 'overflow-y-auto overscroll-contain px-6 py-5 sm:py-6'
               }`}
             >
               {activeSection === SECTION.ADD_PATIENT ? (
@@ -284,19 +341,19 @@ function App() {
                 />
               ) : null}
 
-              {activeSection === SECTION.PROFILES ? (
-                <PlaceholderSection>
-                  <p>
-                    This screen is for <strong className="font-semibold text-slate-800">viewing</strong> saved
-                    patients: search, open a read-only snapshot, and switch between prior runs. It is not where
-                    you upload PDFs or fill intake—use <strong className="font-semibold text-slate-800">Add new patient</strong>{' '}
-                    for that.
-                  </p>
-                  <p className="mt-3 text-slate-500">
-                    This build does not persist records yet; a list and detail view would appear here once
-                    storage is connected.
-                  </p>
-                </PlaceholderSection>
+              {activeSection === SECTION.PROFILES && librarySelectedEntry ? (
+                <PatientLibraryDetail
+                  entry={librarySelectedEntry}
+                  onBack={() => setLibrarySelectedEntry(null)}
+                  onRequestRecommendations={() =>
+                    requestRecommendationsFromLibraryPatient(librarySelectedEntry)
+                  }
+                  isLoadingRecommendations={isLoadingRecommendations}
+                />
+              ) : null}
+
+              {activeSection === SECTION.PROFILES && !librarySelectedEntry ? (
+                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} />
               ) : null}
 
               {activeSection === SECTION.RECOMMENDATIONS ? (
@@ -442,11 +499,11 @@ function App() {
                 {activeSection === SECTION.PRESCRIPTION && (!simulation || !selectedDrug) ? (
                   <span>Complete a monitoring scenario to populate this draft.</span>
                 ) : null}
-                {activeSection === SECTION.PROFILES ||
-                activeSection === SECTION.FOLLOW_UP ||
-                activeSection === SECTION.SETTINGS ||
-                activeSection === SECTION.DOCTOR_PROFILE ? (
-                  <span>This area is a scaffold for upcoming workflow.</span>
+                {activeSection === SECTION.PROFILES && librarySelectedEntry ? (
+                  <span>
+                    Review the snapshot, then use <strong className="font-semibold text-slate-600">Get AI treatment options</strong>{' '}
+                    to generate regimen comparisons.
+                  </span>
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">

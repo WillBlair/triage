@@ -1,0 +1,366 @@
+/**
+ * Simulated patients for the demo library (no persistence).
+ * Scoped to blood pressure (hypertension & hypotension) for a narrow clinical focus.
+ * Pre-built recommendations align with that scope for reference; live AI calls replace them.
+ */
+
+export const DEMO_PATIENTS = [
+  {
+    id: 'demo-m-chen',
+    chartLabel: 'Demo chart — M. Chen',
+    avatarSrc: '/demo/avatars/patient-01.svg',
+    profile: {
+      patientName: 'Margaret Chen',
+      age: 68,
+      sex: 'F',
+      chiefConcern: 'Home BP above goal despite dual therapy',
+      summary:
+        'Stage 2 hypertension with CKD 3a; home averages 148–156/84–92. Prefers once-daily dosing when possible.',
+      diagnoses: ['Hypertension', 'CKD stage 3a'],
+      medications: ['Amlodipine 5 mg daily', 'Lisinopril 10 mg daily'],
+      allergies: ['NKDA'],
+      vitals: [
+        { label: 'BP (office)', value: '152/88 mmHg' },
+        { label: 'HR', value: '72 bpm' },
+        { label: 'BMI', value: '28.4' },
+      ],
+      labs: [
+        { label: 'eGFR', value: '52 mL/min/1.73m²' },
+        { label: 'K+', value: '4.2 mEq/L' },
+        { label: 'Na+', value: '139 mEq/L' },
+      ],
+      sourceHighlights: ['Home log: 2-week average ~152/86; denies orthostatic symptoms.'],
+    },
+    recommendations: {
+      overallReasoning:
+        'ARB suits CKD context; thiazide-like adds potency if eGFR allows; CCB uptitration is straightforward if volume stable.',
+      drugs: [
+        {
+          name: 'Losartan',
+          dose: '50 mg PO daily',
+          drugClass: 'ARB',
+          fitScore: 88,
+          rationale: 'Renal-risk HTN: replace ACE with ARB pathway per usual practice; watch K+ and creatinine.',
+          cautions: ['Recheck K+ in 1–2 weeks', 'Avoid if pregnancy possible'],
+          isNominalFit: true,
+        },
+        {
+          name: 'Chlorthalidone',
+          dose: '12.5 mg PO daily',
+          drugClass: 'Thiazide-like diuretic',
+          fitScore: 71,
+          rationale: 'Adds natriuresis for volume-related BP when kidney function permits.',
+          cautions: ['Monitor Na, K, Cr', 'Orthostasis in older adults'],
+          isNominalFit: false,
+        },
+        {
+          name: 'Amlodipine',
+          dose: '10 mg PO daily',
+          drugClass: 'Dihydropyridine CCB',
+          fitScore: 62,
+          rationale: 'Maximize existing CCB before adding classes if edema tolerable.',
+          cautions: ['Dose-related peripheral edema'],
+          isNominalFit: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'demo-j-ortiz',
+    chartLabel: 'Demo chart — J. Ortiz',
+    avatarSrc: '/demo/avatars/patient-02.svg',
+    profile: {
+      patientName: 'James Ortiz',
+      age: 54,
+      sex: 'M',
+      chiefConcern: 'Clinic and home BP still above target',
+      summary:
+        'Obesity (BMI 33) with treated hypertension; reports salty diet and inconsistent home checks. No symptomatic hypotension.',
+      diagnoses: ['Hypertension', 'Obesity'],
+      medications: ['Lisinopril 20 mg daily', 'HCTZ 12.5 mg daily'],
+      allergies: ['Sulfa — rash'],
+      vitals: [
+        { label: 'BP (office)', value: '158/94 mmHg' },
+        { label: 'BP (home avg)', value: '154/92 mmHg' },
+        { label: 'HR', value: '78 bpm' },
+      ],
+      labs: [
+        { label: 'eGFR', value: '78 mL/min/1.73m²' },
+        { label: 'K+', value: '3.9 mEq/L' },
+        { label: 'A1c', value: '5.8%' },
+      ],
+      sourceHighlights: ['Wants to avoid injectables; goal is BP and weight over the year.'],
+    },
+    recommendations: {
+      overallReasoning:
+        'Add long-acting CCB for synergy; spironolactone if still above goal on three; lifestyle sodium/weight counseling in parallel.',
+      drugs: [
+        {
+          name: 'Amlodipine',
+          dose: '5 mg PO daily → titrate',
+          drugClass: 'Dihydropyridine CCB',
+          fitScore: 87,
+          rationale: 'Strong adjunct on ACE+thiazide backbone for uncontrolled essential HTN.',
+          cautions: ['Edema at higher doses', 'Gingival hyperplasia uncommon'],
+          isNominalFit: true,
+        },
+        {
+          name: 'Spironolactone',
+          dose: '25 mg PO daily',
+          drugClass: 'MRA',
+          fitScore: 72,
+          rationale: 'Evidence-based fourth-line option for resistant hypertension when K+ and renal function allow.',
+          cautions: ['Hyperkalemia risk', 'Avoid if eGFR very low'],
+          isNominalFit: false,
+        },
+        {
+          name: 'Chlorthalidone',
+          dose: 'Replace HCTZ at 12.5 mg daily',
+          drugClass: 'Thiazide-like diuretic',
+          fitScore: 58,
+          rationale: 'Potentiate diuretic effect if volume retention suspected vs HCTZ.',
+          cautions: ['Electrolytes and glucose', 'Orthostasis'],
+          isNominalFit: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'demo-r-kim',
+    chartLabel: 'Demo chart — R. Kim',
+    avatarSrc: '/demo/avatars/patient-03.svg',
+    profile: {
+      patientName: 'Rachel Kim',
+      age: 41,
+      sex: 'F',
+      chiefConcern: 'Lightheaded standing; BP drops on home cuff',
+      summary:
+        'Orthostatic symptoms on current antihypertensives. Supine BP acceptable; standing systolic falls ≥20 mmHg. No syncope.',
+      diagnoses: ['Hypertension', 'Orthostatic hypotension'],
+      medications: ['Metoprolol succinate 100 mg daily', 'Lisinopril 20 mg daily'],
+      allergies: ['NKDA'],
+      vitals: [
+        { label: 'BP supine', value: '128/78 mmHg' },
+        { label: 'BP standing (1 min)', value: '98/62 mmHg' },
+        { label: 'HR standing', value: '88 bpm' },
+      ],
+      labs: [
+        { label: 'Na+', value: '138 mEq/L' },
+        { label: 'Hb', value: '12.4 g/dL' },
+      ],
+      sourceHighlights: ['Symptoms worse mornings; improves after fluids and slower position changes.'],
+    },
+    recommendations: {
+      overallReasoning:
+        'First reduce orthostatic burden (dose adjustment, split dosing); midodrine or fludrocortisone if symptoms persist after med review.',
+      drugs: [
+        {
+          name: 'Metoprolol',
+          dose: 'Reduce to 50 mg daily (or split BID)',
+          drugClass: 'Beta blocker',
+          fitScore: 86,
+          rationale: 'Lessen orthostatic drop by trimming sympathetic blockade while monitoring seated BP.',
+          cautions: ['Rebound HR if stopped abruptly', 'Masking hypoglycemia if diabetic'],
+          isNominalFit: true,
+        },
+        {
+          name: 'Midodrine',
+          dose: '2.5–5 mg PO before upright periods',
+          drugClass: 'Alpha-1 agonist',
+          fitScore: 70,
+          rationale: 'Supports standing BP when non-pharmacologic steps and med reduction insufficient.',
+          cautions: ['Supine hypertension', 'Take before daytime activity only'],
+          isNominalFit: false,
+        },
+        {
+          name: 'Fludrocortisone',
+          dose: '0.1 mg PO daily',
+          drugClass: 'Mineralocorticoid',
+          fitScore: 55,
+          rationale: 'Volume expansion strategy for refractory orthostatic hypotension after assessment.',
+          cautions: ['Hypokalemia', 'Edema and supine BP rise'],
+          isNominalFit: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'demo-a-patel',
+    chartLabel: 'Demo chart — A. Patel',
+    avatarSrc: '/demo/avatars/patient-04.svg',
+    profile: {
+      patientName: 'Anil Patel',
+      age: 72,
+      sex: 'M',
+      chiefConcern: 'Wide gap between office and home BP readings',
+      summary:
+        'Possible white-coat component: home averages near goal while clinic often 150s systolic. Discuss ABPM to clarify true burden.',
+      diagnoses: ['Hypertension'],
+      medications: ['Losartan 50 mg daily'],
+      allergies: ['NKDA'],
+      vitals: [
+        { label: 'BP (office)', value: '156/82 mmHg' },
+        { label: 'BP (home avg)', value: '132/78 mmHg' },
+        { label: 'HR', value: '64 bpm' },
+      ],
+      labs: [
+        { label: 'eGFR', value: '62 mL/min/1.73m²' },
+        { label: 'K+', value: '4.5 mEq/L' },
+      ],
+      sourceHighlights: ['Patient brings home log; anxiety in clinic noted in nursing comment.'],
+    },
+    recommendations: {
+      overallReasoning:
+        'Confirm out-of-office BP before intensifying; if true HTN persists, add CCB or thiazide rather than doubling ARB alone.',
+      drugs: [
+        {
+          name: 'Ambulatory BP monitoring',
+          dose: '24h study before med change',
+          drugClass: 'Diagnostic',
+          fitScore: 90,
+          rationale: 'Separates white-coat effect from sustained hypertension to guide titration.',
+          cautions: ['Arrange interpretation and follow-up'],
+          isNominalFit: true,
+        },
+        {
+          name: 'Amlodipine',
+          dose: '5 mg PO daily',
+          drugClass: 'Dihydropyridine CCB',
+          fitScore: 68,
+          rationale: 'If ABPM confirms uncontrolled BP, add complementary vasodilation to ARB.',
+          cautions: ['Peripheral edema', 'Gingival changes rare'],
+          isNominalFit: false,
+        },
+        {
+          name: 'Chlorthalidone',
+          dose: '12.5 mg PO daily',
+          drugClass: 'Thiazide-like diuretic',
+          fitScore: 52,
+          rationale: 'Volume-sensitive option when home averages remain high on dual therapy.',
+          cautions: ['Na, K, uric acid', 'Orthostasis elderly'],
+          isNominalFit: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'demo-s-okonkwo',
+    chartLabel: 'Demo chart — S. Okonkwo',
+    avatarSrc: '/demo/avatars/patient-05.svg',
+    profile: {
+      patientName: 'Sarah Okonkwo',
+      age: 35,
+      sex: 'F',
+      chiefConcern: 'Chronic fatigue; home BP often below 95 systolic',
+      summary:
+        'History of hypertension; recent uptitration. Now runs hypotensive with exertional dizziness. No pregnancy.',
+      diagnoses: ['Hypertension', 'Symptomatic hypotension'],
+      medications: ['Lisinopril 40 mg daily', 'HCTZ 25 mg daily'],
+      allergies: ['NKDA'],
+      vitals: [
+        { label: 'BP (home avg)', value: '92/58 mmHg' },
+        { label: 'BP (office)', value: '108/68 mmHg' },
+        { label: 'HR', value: '76 bpm' },
+      ],
+      labs: [
+        { label: 'Na+', value: '137 mEq/L' },
+        { label: 'K+', value: '3.6 mEq/L' },
+        { label: 'eGFR', value: '95 mL/min/1.73m²' },
+      ],
+      sourceHighlights: ['Symptoms improved when she skipped one lisinopril dose (self-experiment).'],
+    },
+    recommendations: {
+      overallReasoning:
+        'Reverse overtreatment first: reduce ACE and/or diuretic; reassess standing BP and symptoms before adding pressors.',
+      drugs: [
+        {
+          name: 'Lisinopril',
+          dose: 'Reduce to 20 mg PO daily',
+          drugClass: 'ACE inhibitor',
+          fitScore: 88,
+          rationale: 'Step down RAAS blockade when symptomatic hypotension follows recent intensification.',
+          cautions: ['Recheck BP standing and seated', 'Acute kidney if over-diuresis'],
+          isNominalFit: true,
+        },
+        {
+          name: 'HCTZ',
+          dose: 'Reduce to 12.5 mg or hold',
+          drugClass: 'Thiazide diuretic',
+          fitScore: 71,
+          rationale: 'Lessen intravascular depletion contributing to low diastolic and symptoms.',
+          cautions: ['Rebound volume if stopped abruptly in some contexts'],
+          isNominalFit: false,
+        },
+        {
+          name: 'Midodrine',
+          dose: '2.5 mg PO PRN upright (if still symptomatic)',
+          drugClass: 'Alpha-1 agonist',
+          fitScore: 48,
+          rationale: 'Reserve for persistent orthostatic symptoms after rationalizing antihypertensives.',
+          cautions: ['Supine hypertension if evening doses'],
+          isNominalFit: false,
+        },
+      ],
+    },
+  },
+  {
+    id: 'demo-l-reyes',
+    chartLabel: 'Demo chart — L. Reyes',
+    avatarSrc: '/demo/avatars/patient-06.svg',
+    profile: {
+      patientName: 'Luis Reyes',
+      age: 59,
+      sex: 'M',
+      chiefConcern: 'Resistant HTN on three agents; still 160s systolic',
+      summary:
+        'Hypertension on ARB, CCB, and thiazide with home averages 158–166/88–94. Snoring; BMI 31. Secondary causes not fully excluded.',
+      diagnoses: ['Resistant hypertension', 'Obesity'],
+      medications: ['Valsartan 160 mg daily', 'Amlodipine 10 mg daily', 'HCTZ 25 mg daily'],
+      allergies: ['NKDA'],
+      vitals: [
+        { label: 'BP (home avg)', value: '162/90 mmHg' },
+        { label: 'HR', value: '74 bpm' },
+        { label: 'BMI', value: '31.0' },
+      ],
+      labs: [
+        { label: 'eGFR', value: '72 mL/min/1.73m²' },
+        { label: 'K+', value: '4.1 mEq/L' },
+        { label: 'Aldosterone / renin', value: 'Pending' },
+      ],
+      sourceHighlights: ['Adherence confirmed by pharmacy fill data; sodium intake high per diet recall.'],
+    },
+    recommendations: {
+      overallReasoning:
+        'Fourth-line spironolactone is standard for resistant HTN with acceptable K+ and renal function; consider adherence, sodium, sleep apnea workup in parallel.',
+      drugs: [
+        {
+          name: 'Spironolactone',
+          dose: '25 mg PO daily',
+          drugClass: 'MRA',
+          fitScore: 89,
+          rationale: 'Guideline-supported add-on for true resistant hypertension on maximized triple therapy.',
+          cautions: ['K+ and Cr monitoring', 'Gynecomastia'],
+          isNominalFit: true,
+        },
+        {
+          name: 'Chlorthalidone',
+          dose: 'Replace HCTZ at 12.5–25 mg daily',
+          drugClass: 'Thiazide-like diuretic',
+          fitScore: 66,
+          rationale: 'Stronger natriuresis than HCTZ when volume retention suspected.',
+          cautions: ['Electrolytes', 'Glucose'],
+          isNominalFit: false,
+        },
+        {
+          name: 'Bisoprolol',
+          dose: '5 mg PO daily',
+          drugClass: 'Beta blocker',
+          fitScore: 54,
+          rationale: 'Adjunct when sympathetic drive or comorbid CAD rhythm control supports beta blockade.',
+          cautions: ['Mask hypoglycemia if diabetic', 'Bronchospasm history'],
+          isNominalFit: false,
+        },
+      ],
+    },
+  },
+]
