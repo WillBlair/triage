@@ -18,7 +18,7 @@ import SimulationPanel from './components/SimulationPanel'
 import ProgressStepper from './components/ProgressStepper'
 import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
-import { supabase } from './services/supabase'
+import { supabase, fetchDoctorProfile, upsertDoctorProfile } from './services/supabase'
 
 function ClinicalDisclaimer() {
   return (
@@ -97,15 +97,10 @@ function App() {
   const [isRunningSimulation, setIsRunningSimulation] = useState(false)
   const [intakeForm, setIntakeForm] = useState(() => ({ ...DEFAULT_INTAKE_FORM }))
   const [librarySelectedEntry, setLibrarySelectedEntry] = useState(null)
-  const [onboardingComplete, setOnboardingComplete] = useState(() => {
-    try { return localStorage.getItem('triage_onboarded') === 'true' } catch { return false }
-  })
-  const [doctorProfile, setDoctorProfile] = useState(() => {
-    try { const s = localStorage.getItem('triage_doctor'); return s ? JSON.parse(s) : null } catch { return null }
-  })
-  const [workspaceName, setWorkspaceName] = useState(() => {
-    try { return localStorage.getItem('triage_workspace') || '' } catch { return '' }
-  })
+  const [onboardingComplete, setOnboardingComplete] = useState(false)
+  const [doctorProfile, setDoctorProfile] = useState(null)
+  const [workspaceName, setWorkspaceName] = useState('')
+  const [currentUserId, setCurrentUserId] = useState(null)
 
   // When a different user signs in, reset onboarding so they get their own experience
   const syncUserData = useCallback((session) => {
