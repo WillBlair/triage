@@ -1,33 +1,10 @@
-import { useEffect, useRef } from 'react'
 import TimelineChart from './TimelineChart'
-
-function ThinkingStream({ text }) {
-  const ref = useRef(null)
-  useEffect(() => {
-    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
-  }, [text])
-
-  if (!text) return null
-  return (
-    <div
-      ref={ref}
-      className="rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3 text-sm leading-relaxed text-teal-900 max-h-28 overflow-y-auto"
-    >
-      <span className="mr-2 text-[10px] font-semibold uppercase tracking-widest text-teal-600">
-        Analyzing
-      </span>
-      {text}
-      <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-teal-500 align-middle" />
-    </div>
-  )
-}
 
 function SimulationPanel({
   embedded = false,
   selectedDrug,
   simulation,
   isRunning,
-  thinkingText = '',
   onRun,
   onContinueToPrescribe,
 }) {
@@ -90,10 +67,6 @@ function SimulationPanel({
       </div>
 
       <div className={`flex flex-col gap-3 ${chartGap}`}>
-        {(isRunning || thinkingText) && !simulation && (
-          <ThinkingStream text={thinkingText} />
-        )}
-
         <TimelineChart
           simulation={simulation}
           isRunning={isRunning}

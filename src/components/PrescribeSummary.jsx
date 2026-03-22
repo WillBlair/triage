@@ -79,8 +79,6 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
     lines.push(`${pharmacy.name} — ${pharmacy.detail}`)
     lines.push('')
   }
-  lines.push('— Clinician review & sign-off required before any prescription is placed')
-  lines.push('— Receiving pharmacy / recipient verification: __________________  Date: ______')
   return lines.join('\n')
 }
 
@@ -122,17 +120,7 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Draft handoff excerpt
-          </p>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-            Condensed from the eight-week monitoring scenario so you can paste draft text into your
-            EHR, fax cover sheet, or pharmacy message. Verify before acting and complete real
-            prescribing and sign-off outside this prototype.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={handleCopy}
@@ -299,25 +287,6 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-700">
             Draft currently addressed to <span className="font-semibold">{selectedPharmacy.name}</span>
             <span className="text-slate-500"> — {selectedPharmacy.detail}</span>.
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 border-t border-dashed border-slate-200 pt-6 sm:grid-cols-2">
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Clinician
-            </p>
-            <p className="mt-3 text-sm text-slate-500">Reviewed before external sign-off</p>
-            <div className="mt-8 border-b border-slate-300 pb-1 text-xs text-slate-400">Signature</div>
-            <div className="mt-3 border-b border-slate-300 pb-1 text-xs text-slate-400">Date</div>
-          </div>
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Pharmacy / recipient
-            </p>
-            <p className="mt-3 text-sm text-slate-500">Verification / counseling documented</p>
-            <div className="mt-8 border-b border-slate-300 pb-1 text-xs text-slate-400">Signature</div>
-            <div className="mt-3 border-b border-slate-300 pb-1 text-xs text-slate-400">Date</div>
           </div>
         </div>
       </div>

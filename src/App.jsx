@@ -57,8 +57,7 @@ const SECTION_HEADER = {
   [SECTION.PRESCRIPTION]: {
     kicker: 'Handoff',
     title: 'Draft handoff text',
-    description:
-      'Draft text derived from the last monitoring scenario. Use it as a handoff excerpt, then complete any real prescribing workflow elsewhere.',
+    description: '',
   },
   [SECTION.FOLLOW_UP]: {
     kicker: 'Care plan',
@@ -88,7 +87,6 @@ function App() {
   const [recommendations, setRecommendations] = useState(null)
   const [selectedDrug, setSelectedDrug] = useState(null)
   const [simulation, setSimulation] = useState(null)
-  const [thinkingText, setThinkingText] = useState('')
   const [error, setError] = useState('')
   const [isParsing, setIsParsing] = useState(false)
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
@@ -180,7 +178,6 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setThinkingText('')
     setError('')
     setIsConfirmed(false)
     setIsParsing(false)
@@ -215,7 +212,6 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setThinkingText('')
     setIsLoadingRecommendations(true)
     try {
       const nextRecommendations = await getRecommendations(entry.profile)
@@ -248,7 +244,6 @@ function App() {
     setRecommendations(null)
     setSelectedDrug(null)
     setSimulation(null)
-    setThinkingText('')
     setIsParsing(true)
     setIsLoadingRecommendations(false)
 
@@ -278,15 +273,11 @@ function App() {
     }
 
     setSimulation(null)
-    setThinkingText('')
     setError('')
     setIsRunningSimulation(true)
 
     try {
       await runSimulation(profile, selectedDrug, (event) => {
-        if (event.type === 'thinking') {
-          setThinkingText((prev) => prev + event.chunk)
-        }
         if (event.type === 'result') {
           setSimulation(event.simulation)
         }
@@ -536,7 +527,6 @@ function App() {
                   onSelect={(drug) => {
                     setSelectedDrug(drug)
                     setSimulation(null)
-                    setThinkingText('')
                   }}
                 />
               ) : null}
@@ -547,7 +537,6 @@ function App() {
                   selectedDrug={selectedDrug}
                   simulation={simulation}
                   isRunning={isRunningSimulation}
-                  thinkingText={thinkingText}
                   onRun={handleRunSimulation}
                 />
               ) : null}
