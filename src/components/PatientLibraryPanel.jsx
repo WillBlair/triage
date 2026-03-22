@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
 import { DEMO_PATIENTS } from '../constants/demoPatients'
 
-export default function PatientLibraryPanel({ onOpenPatientDetail }) {
+export default function PatientLibraryPanel({ onOpenPatientDetail, savedPatients = [] }) {
   const [query, setQuery] = useState('')
+
+  const allPatients = useMemo(() => [...savedPatients, ...DEMO_PATIENTS], [savedPatients])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) {
-      return DEMO_PATIENTS
+      return allPatients
     }
-    return DEMO_PATIENTS.filter((p) => {
+    return allPatients.filter((p) => {
       const blob = [
         p.profile.patientName,
         p.profile.chiefConcern,
@@ -37,13 +39,19 @@ export default function PatientLibraryPanel({ onOpenPatientDetail }) {
                 className="flex h-full min-h-[11.5rem] w-full flex-col items-center rounded-xl p-2.5 text-center outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 sm:min-h-[12rem] sm:p-3"
               >
                 <div className="flex w-full shrink-0 flex-col items-center">
-                  <img
-                    src={entry.avatarSrc}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-slate-200/80 sm:h-14 sm:w-14"
-                  />
+                  {entry.avatarSrc ? (
+                    <img
+                      src={entry.avatarSrc}
+                      alt=""
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-slate-200/80 sm:h-14 sm:w-14"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-sm font-bold text-teal-700 ring-1 ring-teal-200/80 sm:h-14 sm:w-14 sm:text-base">
+                      {(entry.profile.patientName || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <h3 className="mt-2 line-clamp-2 w-full font-serif text-xs font-semibold leading-tight text-slate-900 sm:text-sm">
                     {entry.profile.patientName}
                   </h3>

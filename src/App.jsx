@@ -99,6 +99,7 @@ function App() {
   const [workspaceName, setWorkspaceName] = useState('')
   const [currentUserId, setCurrentUserId] = useState(null)
   const [doctorEmail, setDoctorEmail] = useState('')
+  const [savedPatients, setSavedPatients] = useState([])
   const hasSignedIn = useRef(false)
 
   // When a user signs in, load their profile from Supabase
@@ -233,6 +234,10 @@ function App() {
       })
     }
   }, [currentUserId, workspaceName])
+
+  const handleMergePatient = useCallback((patientEntry) => {
+    setSavedPatients((prev) => [patientEntry, ...prev])
+  }, [])
 
   const handleSelectFile = async (file) => {
     setFileName(file.name)
@@ -499,6 +504,7 @@ function App() {
                   error=""
                   doctorEmail={doctorEmail}
                   doctorName={doctorProfile?.displayName || ''}
+                  onMergePatient={handleMergePatient}
                 />
               ) : null}
 
@@ -514,7 +520,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.PROFILES && !librarySelectedEntry ? (
-                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} />
+                <PatientLibraryPanel onOpenPatientDetail={openLibraryPatientDetail} savedPatients={savedPatients} />
               ) : null}
 
               {activeSection === SECTION.RECOMMENDATIONS ? (
