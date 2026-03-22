@@ -133,6 +133,16 @@ export function createApp({ aiService }) {
     }
   })
 
+  app.post('/api/summarize-checkin', async (request, response, next) => {
+    try {
+      const { symptoms, freeText, medicationName } = request.body ?? {}
+      const summary = await aiService.summarizeCheckin({ symptoms, freeText, medicationName })
+      response.json({ summary })
+    } catch (error) {
+      next(error)
+    }
+  })
+
   app.use((error, _request, response, _next) => {
     response.status(500).json({
       error: error instanceof Error ? error.message : 'Unexpected server error.',

@@ -192,6 +192,51 @@ export function createAiService() {
         drugs: sortDrugsByModelFitRank(raw.drugs ?? []),
       }
     },
+    async summarizeCheckin({ symptoms, freeText, medicationName }) {
+      const symptomLabels = {
+        nausea: 'Nausea or upset stomach',
+        dizziness: 'Dizziness or lightheadedness',
+        fatigue: 'Fatigue or low energy',
+        headache: 'Headache',
+        rash: 'Rash or skin changes',
+        sleep: 'Difficulty sleeping',
+        none: 'No side effects — feeling fine',
+        other: 'Something else',
+      }
+      const labeledSymptoms = (symptoms ?? [])
+        .map((s) => symptomLabels[s] ?? s)
+        .join(', ')
+      const userContent = [
+        `Medication: ${medicationName || 'unknown'}`,
+        `Symptoms selected: ${labeledSymptoms || 'none'}`,
+        freeText ? `Patient message: "${freeText}"` : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+      const CHECKIN_SUMMARY_SYSTEM = `You are a clinical AI reviewing a post-prescription check-in response from a patient.
+Given the medication, symptoms selected, and free-text description, write a brief clinical summary (2-3 sentences) that a clinician can quickly scan to assess the patient's status.
+Focus on whether symptoms are expected for this medication, any concerning patterns, and recommended next steps if warranted.
+Be concise and clinical. Do not diagnose or prescribe. Return plain text only — no markdown, no JSON.`
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 256,
+          system: CHECKIN_SUMMARY_SYSTEM,
+          messages: [{ role: 'user', content: userContent }],
+        }),
+      })
+      if (!response.ok) {
+        throw new Error((await response.text()) || 'Claude request failed.')
+      }
+      const data = await response.json()
+      return data.content?.[0]?.text?.trim() ?? ''
+    },
     async *streamSimulation({ profile, recommendation }) {
       const simulation = await askClaudeJson(SIMULATION_SYSTEM, {
         profile,
