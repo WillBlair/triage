@@ -8,11 +8,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export async function fetchDoctorProfile(userId) {
   const { data, error } = await supabase
     .from('doctor_profiles')
-    .select('display_name, specialty, hospital, npi, workspace_name, onboarded')
-    .eq('id', userId)
+    .select('id, user_id, display_name, specialty, hospital, npi, workspace_name, onboarded')
+    .eq('user_id', userId)
     .single()
 
   if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows found, which is fine for new users
     console.error('Error fetching doctor profile:', error)
     return null
   }
@@ -26,7 +27,7 @@ export async function fetchDoctorProfile(userId) {
       npi: data.npi || '',
     },
     workspaceName: data.workspace_name || '',
-    onboarded: data.onboarded || false,
+    onboarded: data.onboarded === true,
   }
 }
 
@@ -34,7 +35,7 @@ export async function upsertDoctorProfile(userId, { doctorProfile, workspaceName
   const { error } = await supabase
     .from('doctor_profiles')
     .upsert({
-      id: userId,
+      user_id: userId,
       display_name: doctorProfile?.displayName || '',
       specialty: doctorProfile?.specialty || '',
       hospital: doctorProfile?.hospital || '',
@@ -42,7 +43,7 @@ export async function upsertDoctorProfile(userId, { doctorProfile, workspaceName
       workspace_name: workspaceName ?? '',
       onboarded: onboarded ?? false,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' })
+    }, { onConflict: 'user_id' })
 
   if (error) {
     console.error('Error saving doctor profile:', error)
