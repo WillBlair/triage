@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SECTION } from './constants/navigation'
 import AddPatientIntake from './components/AddPatientIntake'
 import AppSidebar from './components/AppSidebar'
-import FollowUpDashboard from './components/FollowUpDashboard'
 import PatientLibraryDetail from './components/PatientLibraryDetail'
 import PatientLibraryPanel from './components/PatientLibraryPanel'
 import AuthPage, { AUTH_MODE } from './components/AuthPage'
@@ -98,36 +97,26 @@ function App() {
   const [onboardingComplete, setOnboardingComplete] = useState(false)
   const [doctorProfile, setDoctorProfile] = useState(null)
   const [workspaceName, setWorkspaceName] = useState('')
-
-  // ── Rapid Fire Hackathon Demo Follow-Up Loop ──
-  useEffect(() => {
-    let intervalId
-    if (isConfirmed) {
-      intervalId = setInterval(() => {
-        // Call the cron route directly from the frontend to trigger a Telegram message
-        fetch('/api/cron/weekly-followup').catch(err => console.error('Rapid fire follow-up failed:', err))
-      }, 20000)
-    }
-    return () => clearInterval(intervalId)
-  }, [isConfirmed])
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [doctorEmail, setDoctorEmail] = useState('')
+  const hasSignedIn = useRef(false)
 
-  // When a different user signs in, reset onboarding so they get their own experience
-  const syncUserData = useCallback((session) => {
+  // When a user signs in, load their profile from Supabase
+  const syncUserData = useCallback(async (session) => {
     if (!session) return
-    try {
-      const storedUserId = localStorage.getItem('triage_user_id')
-      if (storedUserId !== session.user.id) {
-        // Different user (or first ever login) — clear previous user's onboarding data
-        localStorage.removeItem('triage_onboarded')
-        localStorage.removeItem('triage_doctor')
-        localStorage.removeItem('triage_workspace')
-        localStorage.setItem('triage_user_id', session.user.id)
-        setOnboardingComplete(false)
-        setDoctorProfile(null)
-        setWorkspaceName('')
-      }
-    } catch { /* storage unavailable */ }
+    const userId = session.user.id
+    setCurrentUserId(userId)
+    setDoctorEmail(session.user.email || '')
+    const saved = await fetchDoctorProfile(userId)
+    if (saved) {
+      setDoctorProfile(saved.doctorProfile)
+      setWorkspaceName(saved.workspaceName)
+      setOnboardingComplete(saved.onboarded)
+    } else {
+      setDoctorProfile(null)
+      setWorkspaceName('')
+      setOnboardingComplete(false)
+    }
   }, [])
 
   // Resolve initial view: check for existing session before rendering anything
@@ -143,6 +132,7 @@ function App() {
         supabase.auth.signOut()
         setView(VIEW.EMAIL_CONFIRMED)
       } else if (session) {
+        hasSignedIn.current = true
         syncUserData(session)
         setView(VIEW.WORKSPACE)
       } else {
@@ -151,8 +141,10 @@ function App() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Ignore the session created by email confirmation — we handle that above
-      if (event === 'SIGNED_IN' && session && view !== VIEW.EMAIL_CONFIRMED) {
+      // Only act on genuine first sign-in. Supabase re-emits SIGNED_IN on
+      // tab focus, token refresh, etc. — ignore those to keep the UI stable.
+      if (event === 'SIGNED_IN' && session && !hasSignedIn.current) {
+        hasSignedIn.current = true
         syncUserData(session)
         setView(VIEW.WORKSPACE)
         setActiveSection(SECTION.ADD_PATIENT)
@@ -233,10 +225,14 @@ function App() {
 
   const handleUpdateDoctorProfile = useCallback((updated) => {
     setDoctorProfile(updated)
-    try {
-      localStorage.setItem('triage_doctor', JSON.stringify(updated))
-    } catch { /* storage unavailable */ }
-  }, [])
+    if (currentUserId) {
+      upsertDoctorProfile(currentUserId, {
+        doctorProfile: updated,
+        workspaceName,
+        onboarded: true,
+      })
+    }
+  }, [currentUserId, workspaceName])
 
   const handleSelectFile = async (file) => {
     setFileName(file.name)
@@ -295,7 +291,6 @@ function App() {
   }
 
   const handleConfirmPrescription = async () => {
-    const currentUserId = localStorage.getItem('triage_user_id')
     setIsConfirming(true)
     try {
       await savePrescription({
@@ -308,7 +303,6 @@ function App() {
       setIsConfirmed(true)
     } catch (err) {
       console.warn('Prescription save failed:', err)
-      // Ignore for demo purposes so UX completes
       setIsConfirmed(true)
     } finally {
       setIsConfirming(false)
@@ -404,11 +398,13 @@ function App() {
             setWorkspaceName(ws.workspaceName)
             setOnboardingComplete(true)
             setActiveSection(SECTION.ADD_PATIENT)
-            try {
-              localStorage.setItem('triage_onboarded', 'true')
-              localStorage.setItem('triage_doctor', JSON.stringify(dp))
-              localStorage.setItem('triage_workspace', ws.workspaceName)
-            } catch { /* storage unavailable */ }
+            if (currentUserId) {
+              upsertDoctorProfile(currentUserId, {
+                doctorProfile: dp,
+                workspaceName: ws.workspaceName,
+                onboarded: true,
+              })
+            }
           }}
         />
       </>
@@ -501,6 +497,8 @@ function App() {
                   isLoadingRecommendations={isLoadingRecommendations}
                   onSelectFile={handleSelectFile}
                   error=""
+                  doctorEmail={doctorEmail}
+                  doctorName={doctorProfile?.displayName || ''}
                 />
               ) : null}
 
@@ -574,7 +572,9 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <FollowUpDashboard />
+                <PlaceholderSection>
+                  Follow-up scheduling, tasks, and patient messaging will live here in a future version.
+                </PlaceholderSection>
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (
@@ -711,7 +711,7 @@ function App() {
                     ) : (
                       <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800 border border-teal-200/60 shadow-sm">
                         <span className="text-teal-600 text-lg">✓</span>
-                        Prescription Sent! Follow-up Sequence Started
+                        Prescription Sent!
                       </div>
                     )}
                   </>

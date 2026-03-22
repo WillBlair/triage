@@ -255,7 +255,7 @@ function ChangePasswordFlow({ userEmail }) {
 
             {newPassword.length > 0 && (
               <div className="flex flex-col gap-1.5 rounded-xl border border-slate-100 bg-white px-4 py-3">
-                <CheckRow passed={validation.hasValidLength} label="8\u201332 characters" />
+                <CheckRow passed={validation.hasValidLength} label={'8\u201332 characters'} />
                 <CheckRow passed={validation.hasUppercase} label="One uppercase letter" />
                 <CheckRow passed={validation.hasNumber} label="One number" />
                 <CheckRow passed={validation.hasSpecial} label="One special character (@, #, $, _, -)" />
