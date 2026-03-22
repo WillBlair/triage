@@ -1,5 +1,13 @@
 export default async function handler(req, res) {
   try {
+    // Polyfill DOMMatrix for pdfjs-dist on Vercel Node runtime
+    if (typeof globalThis !== 'undefined' && !globalThis.DOMMatrix) {
+      globalThis.DOMMatrix = class DOMMatrix {}
+    }
+    if (typeof globalThis !== 'undefined' && !globalThis.Path2D) {
+      globalThis.Path2D = class Path2D {}
+    }
+
     const { createApp } = await import('../server/app.js')
     const { createAiService } = await import('../server/recommendations.js')
 
