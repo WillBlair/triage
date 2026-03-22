@@ -10,6 +10,7 @@ import LandingPage from './components/LandingPage'
 import Onboarding from './components/Onboarding'
 import PatientProfile from './components/PatientProfile'
 import DoctorProfilePanel from './components/DoctorProfilePanel'
+import FollowUpPanel from './components/FollowUpPanel'
 import PlaceholderSection from './components/PlaceholderSection'
 import SettingsPanel from './components/SettingsPanel'
 import PrescribeSummary from './components/PrescribeSummary'
@@ -63,9 +64,9 @@ const SECTION_HEADER = {
       'Draft text derived from the last monitoring scenario. Use it as a handoff excerpt, then complete any real prescribing workflow elsewhere.',
   },
   [SECTION.FOLLOW_UP]: {
-    kicker: 'Care plan',
+    kicker: 'Check-ins',
     title: 'Follow up',
-    description: 'Schedule visits, tasks, and reminders in a future release.',
+    description: 'Review patient check-in responses, symptom reports, and emergency flags from Triage.',
   },
   [SECTION.SETTINGS]: {
     kicker: 'Workspace',
@@ -533,6 +534,8 @@ function App() {
                     profile={profile}
                     selectedDrug={selectedDrug}
                     simulation={simulation}
+                    patientEmail={intakeForm.patientEmail}
+                    onNavigateToFollowUp={() => setActiveSection(SECTION.FOLLOW_UP)}
                   />
                 ) : (
                   <PlaceholderSection title="Run a monitoring scenario first">
@@ -559,9 +562,7 @@ function App() {
               ) : null}
 
               {activeSection === SECTION.FOLLOW_UP ? (
-                <PlaceholderSection>
-                  Follow-up scheduling, tasks, and patient messaging will live here in a future version.
-                </PlaceholderSection>
+                <FollowUpPanel />
               ) : null}
 
               {activeSection === SECTION.SETTINGS ? (

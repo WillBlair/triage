@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { supabase } from '../services/supabase'
 
 const DEMO_PHARMACIES = [
   {
@@ -84,9 +85,12 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
   return lines.join('\n')
 }
 
-export default function PrescribeSummary({ profile, selectedDrug, simulation }) {
+export default function PrescribeSummary({ profile, selectedDrug, simulation, patientEmail, onNavigateToFollowUp }) {
   const [copied, setCopied] = useState(false)
   const [pharmacyId, setPharmacyId] = useState(DEMO_PHARMACIES[0].id)
+  const [dispatching, setDispatching] = useState(false)
+  const [dispatched, setDispatched] = useState(false)
+  const [dispatchError, setDispatchError] = useState('')
 
   const selectedPharmacy = useMemo(
     () => DEMO_PHARMACIES.find((p) => p.id === pharmacyId) ?? DEMO_PHARMACIES[0],
@@ -107,6 +111,24 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
   const topEffects = useMemo(() => (simulation?.sideEffects || []).slice(0, 4), [simulation])
   const topRisks = useMemo(() => (simulation?.riskScores || []).slice(0, 4), [simulation])
   const pearls = useMemo(() => (simulation?.takeaways || []).slice(0, 5), [simulation])
+
+  const handleDispatch = useCallback(async () => {
+    if (!patientEmail?.trim() || !selectedDrug?.name) return
+    setDispatching(true)
+    setDispatchError('')
+    try {
+      const { error } = await supabase.from('prescriptions').insert({
+        patient_email: patientEmail.trim().toLowerCase(),
+        medication_name: selectedDrug.name,
+      })
+      if (error) throw error
+      setDispatched(true)
+    } catch (err) {
+      setDispatchError(err.message ?? 'Failed to dispatch check-in.')
+    } finally {
+      setDispatching(false)
+    }
+  }, [patientEmail, selectedDrug])
 
   const handleCopy = useCallback(async () => {
     try {
@@ -300,6 +322,53 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
             Draft currently addressed to <span className="font-semibold">{selectedPharmacy.name}</span>
             <span className="text-slate-500"> — {selectedPharmacy.detail}</span>.
           </div>
+        </div>
+
+        <div className="mt-8 border-t border-slate-100 pt-6">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Dispatch Triage check-in
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+            Send a post-appointment follow-up to the patient via Discord. Triage will message them
+            in 24 hours to screen for side effects and drug interactions.
+          </p>
+          {!patientEmail?.trim() ? (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-800">
+              No patient email on file. Go back to <strong className="font-semibold">Add new patient → Chart &amp; merge</strong> and enter the patient email to enable this.
+            </div>
+          ) : dispatched ? (
+            <div className="mt-3 flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+              <p className="text-sm font-medium text-emerald-800">
+                Check-in dispatched for <span className="font-semibold">{patientEmail}</span>. Triage will contact the patient.
+              </p>
+              {onNavigateToFollowUp && (
+                <button
+                  type="button"
+                  onClick={onNavigateToFollowUp}
+                  className="self-start text-xs font-semibold text-emerald-700 underline underline-offset-2 transition hover:text-emerald-900"
+                >
+                  View in Follow up →
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+                {patientEmail}
+              </div>
+              <button
+                type="button"
+                onClick={handleDispatch}
+                disabled={dispatching}
+                className="shrink-0 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:opacity-50"
+              >
+                {dispatching ? 'Sending…' : 'Send check-in'}
+              </button>
+            </div>
+          )}
+          {dispatchError ? (
+            <p className="mt-2 text-sm text-rose-600">{dispatchError}</p>
+          ) : null}
         </div>
 
         <div className="mt-8 grid gap-4 border-t border-dashed border-slate-200 pt-6 sm:grid-cols-2">

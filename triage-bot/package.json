@@ -1,0 +1,17 @@
+{
+  "name": "triage-bot",
+  "version": "1.0.0",
+  "description": "Post-appointment follow-up Discord bot powered by Anthropic Claude",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "register": "node register-commands.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@supabase/supabase-js": "^2.99.3",
+    "discord.js": "^14.25.1",
+    "dotenv": "^16.4.5"
+  }
+}

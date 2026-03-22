@@ -7,6 +7,7 @@ function mockAiService(overrides = {}) {
     parseDocument: vi.fn(),
     createRecommendations: vi.fn(),
     streamSimulation: vi.fn(),
+    summarizeCheckin: vi.fn(),
     ...overrides,
   }
 }
@@ -67,6 +68,37 @@ describe('createApp', () => {
 
     expect(response.status).toBe(200)
     expect(response.body.recommendations).toEqual(recommendations)
+  })
+
+  it('summarizes a check-in response', async () => {
+    const summary = 'Patient reports mild fatigue, consistent with expected Lisinopril side effects. No urgent follow-up indicated.'
+    const app = createApp({
+      aiService: mockAiService({
+        summarizeCheckin: vi.fn().mockResolvedValue(summary),
+      }),
+    })
+
+    const response = await request(app).post('/api/summarize-checkin').send({
+      symptoms: ['fatigue', 'headache'],
+      freeText: 'Feeling a bit tired but otherwise okay.',
+      medicationName: 'Lisinopril 10mg',
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.body.summary).toBe(summary)
+  })
+
+  it('returns a summary even with no symptoms or free text', async () => {
+    const app = createApp({
+      aiService: mockAiService({
+        summarizeCheckin: vi.fn().mockResolvedValue('No symptoms reported.'),
+      }),
+    })
+
+    const response = await request(app).post('/api/summarize-checkin').send({})
+
+    expect(response.status).toBe(200)
+    expect(response.body.summary).toBe('No symptoms reported.')
   })
 
   it('streams simulation events', async () => {

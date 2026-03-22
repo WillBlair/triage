@@ -557,6 +557,20 @@ function StepChartMerge({
                 ))}
               </select>
             </div>
+            <div>
+              <FieldLabel id="intake-patient-email" optional>Patient email (for follow-up check-in)</FieldLabel>
+              <input
+                id="intake-patient-email"
+                type="email"
+                placeholder="patient@example.com"
+                value={intakeForm.patientEmail || ''}
+                onChange={(e) => patch({ patientEmail: e.target.value })}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Used to send the patient a post-appointment check-in via Discord.
+              </p>
+            </div>
           </div>
         </section>
 

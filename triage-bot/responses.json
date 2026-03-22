@@ -1,0 +1,100 @@
+[
+  {
+    "timestamp": "2026-03-22T06:12:12.185Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "sleep"
+    ],
+    "freeText": "I'm just having some insomnia problems after taking the medicine",
+    "emergencyFlag": false
+  },
+  {
+    "timestamp": "2026-03-22T06:22:22.159Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "fatigue"
+    ],
+    "freeText": "Just very low energy after the first day",
+    "emergencyFlag": false
+  },
+  {
+    "timestamp": "2026-03-22T08:34:19.425Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache"
+    ],
+    "freeText": "I am also feeling symptoms of nausea and swelling",
+    "emergencyFlag": true,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T08:34:21.970Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache"
+    ],
+    "freeText": "I am also feeling symptoms of nausea and swelling",
+    "emergencyFlag": true,
+    "prescriptionId": "8e686648-5ac0-4b9c-bc74-3cf14af9e9a4"
+  },
+  {
+    "timestamp": "2026-03-22T08:39:12.002Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache"
+    ],
+    "freeText": "No",
+    "emergencyFlag": false,
+    "prescriptionId": "1201fdff-3ea9-4ec3-bffa-eaaf5d048e29"
+  },
+  {
+    "timestamp": "2026-03-22T08:39:12.022Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache"
+    ],
+    "freeText": "No",
+    "emergencyFlag": false,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T08:39:12.135Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache"
+    ],
+    "freeText": "No",
+    "emergencyFlag": false,
+    "prescriptionId": "1201fdff-3ea9-4ec3-bffa-eaaf5d048e29"
+  },
+  {
+    "timestamp": "2026-03-22T08:39:12.457Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache"
+    ],
+    "freeText": "No",
+    "emergencyFlag": false,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T08:41:30.568Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "rash"
+    ],
+    "freeText": "I'm also experiencing swelling and also some minor internal bleeding",
+    "emergencyFlag": true,
+    "prescriptionId": "2a9b75cd-44e6-4ecd-b4d0-0d583e307d68"
+  },
+  {
+    "timestamp": "2026-03-22T10:12:51.442Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "rash"
+    ],
+    "freeText": "There is also internal bleeding and fatigue",
+    "emergencyFlag": false,
+    "prescriptionId": "a6ddf5d4-9924-48e2-9815-ccca9fe6dc6e"
+  }
+]
