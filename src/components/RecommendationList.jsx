@@ -130,6 +130,14 @@ function OptionRow({ rank, drug, isSelected, onSelect }) {
                 <span className="text-slate-800">{drug.drugClass}</span>
               </p>
             ) : null}
+            {drug.guidelineCitation ? (
+              <p>
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-teal-800/80">
+                  Guideline
+                </span>{' '}
+                <span className="text-teal-900/90 italic">{drug.guidelineCitation}</span>
+              </p>
+            ) : null}
             {rationale ? <p>{rationale}</p> : null}
             {cautions.length > 0 ? (
               <div>

@@ -38,9 +38,10 @@ Return JSON with this shape:
       "dose": "string",
       "drugClass": "string — short label only, e.g. ARB",
       "fitScore": "integer 0–100, higher = stronger patient-specific fit; best option highest",
-      "rationale": "string — exactly ONE tight sentence, max ~18 words; no second sentence",
-      "cautions": ["string — max 2 items; each item one short phrase, max ~10 words"],
+      "rationale": "string — 1-2 cohesive sentences of detailed clinical rationale explaining the fit",
+      "cautions": ["string — 1-2 items; clinical warnings or monitoring needs"],
       "estimatedCost": "string — e.g. 'Est. $10/mo', 'Est. $4-10/mo', 'Tier 1'",
+      "guidelineCitation": "string — very brief, e.g. 'ACC/AHA 2017: First-line for HTN/Diabetes'",
       "isNominalFit": false
     }
   ]
@@ -52,8 +53,8 @@ Rules:
 - Order the "drugs" array by descending fitScore (best option first). The UI shows rank 1 for the first row.
 - Mark at most one option with "isNominalFit": true, and only when it represents the model's nominal fit for demo purposes.
 - Do not imply autonomous prescribing or that the clinician must choose the nominal fit.
-- Brevity is required: UI shows compact cards. If you write long text, it will be trimmed—prefer sparse, scannable wording.
-- Personalize to the profile; keep clinically plausible; put the single highest-yield caution in cautions (omit minor caveats).
+- Provide thorough, clinical reasoning in the rationale. Only the guidelineCitation and estimatedCost need to be strictly brief.
+- Personalize to the profile; keep clinically plausible.
 ${JSON_RESPONSE_RULE}`
 
 const SIMULATION_SYSTEM = `You are a clinical simulation engine for a doctor decision-support tool.

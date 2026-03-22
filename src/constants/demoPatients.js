@@ -37,6 +37,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Losartan',
+          guidelineCitation: 'ACC/AHA 2017: First-line for HTN w/ CKD or diabetes',
           estimatedCost: 'Est. $9/mo (Tier 1)',
           dose: '50 mg PO daily',
           drugClass: 'ARB',
@@ -47,6 +48,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          guidelineCitation: 'ACC/AHA 2017: Preferred diuretic based on half-life',
           estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: '12.5 mg PO daily',
           drugClass: 'Thiazide-like diuretic',
@@ -57,6 +59,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Amlodipine',
+          guidelineCitation: 'ACC/AHA 2017: First-line monotherapy or adjunct',
           estimatedCost: 'Est. $6/mo (Tier 1)',
           dose: '10 mg PO daily',
           drugClass: 'Dihydropyridine CCB',
@@ -100,6 +103,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Amlodipine',
+          guidelineCitation: 'ACC/AHA 2017: First-line monotherapy or adjunct',
           estimatedCost: 'Est. $6/mo (Tier 1)',
           dose: '5 mg PO daily → titrate',
           drugClass: 'Dihydropyridine CCB',
@@ -110,6 +114,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Spironolactone',
+          guidelineCitation: 'AHA 2018: Primary add-on for resistant HTN',
           estimatedCost: 'Est. $11/mo (Tier 1)',
           dose: '25 mg PO daily',
           drugClass: 'MRA',
@@ -120,6 +125,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          guidelineCitation: 'ACC/AHA 2017: Preferred diuretic based on half-life',
           estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Replace HCTZ at 12.5 mg daily',
           drugClass: 'Thiazide-like diuretic',
@@ -162,6 +168,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Metoprolol',
+          guidelineCitation: 'ACC/AHA 2017: Reserve beta blockers for specific indications',
           estimatedCost: 'Est. $7/mo (Tier 1)',
           dose: 'Reduce to 50 mg daily (or split BID)',
           drugClass: 'Beta blocker',
@@ -172,6 +179,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Midodrine',
+          guidelineCitation: 'AAN: First-line for symptomatic neurogenic orthostatic hypotension',
           estimatedCost: 'Est. $25/mo (Tier 2)',
           dose: '2.5–5 mg PO before upright periods',
           drugClass: 'Alpha-1 agonist',
@@ -182,6 +190,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Fludrocortisone',
+          guidelineCitation: 'AAN: Volume expansion for orthostatic hypotension',
           estimatedCost: 'Est. $18/mo (Tier 1)',
           dose: '0.1 mg PO daily',
           drugClass: 'Mineralocorticoid',
@@ -224,6 +233,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Ambulatory BP monitoring',
+          guidelineCitation: 'USPSTF: Confirm diagnosis before starting treatment',
           estimatedCost: 'Requires PA / $50-$200',
           dose: '24h study before med change',
           drugClass: 'Diagnostic',
@@ -234,6 +244,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Amlodipine',
+          guidelineCitation: 'ACC/AHA 2017: First-line monotherapy or adjunct',
           estimatedCost: 'Est. $6/mo (Tier 1)',
           dose: '5 mg PO daily',
           drugClass: 'Dihydropyridine CCB',
@@ -244,6 +255,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          guidelineCitation: 'ACC/AHA 2017: Preferred diuretic based on half-life',
           estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: '12.5 mg PO daily',
           drugClass: 'Thiazide-like diuretic',
@@ -287,6 +299,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Lisinopril',
+          guidelineCitation: 'ACC/AHA 2017: First-line core antihypertensive',
           estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Reduce to 20 mg PO daily',
           drugClass: 'ACE inhibitor',
@@ -297,6 +310,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'HCTZ',
+          guidelineCitation: 'ACC/AHA 2017: Standard initial therapy option',
           estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Reduce to 12.5 mg or hold',
           drugClass: 'Thiazide diuretic',
@@ -307,6 +321,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Midodrine',
+          guidelineCitation: 'AAN: First-line for symptomatic neurogenic orthostatic hypotension',
           estimatedCost: 'Est. $25/mo (Tier 2)',
           dose: '2.5 mg PO PRN upright (if still symptomatic)',
           drugClass: 'Alpha-1 agonist',
@@ -350,6 +365,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Spironolactone',
+          guidelineCitation: 'AHA 2018: Primary add-on for resistant HTN',
           estimatedCost: 'Est. $11/mo (Tier 1)',
           dose: '25 mg PO daily',
           drugClass: 'MRA',
@@ -360,6 +376,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          guidelineCitation: 'ACC/AHA 2017: Preferred diuretic based on half-life',
           estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Replace HCTZ at 12.5–25 mg daily',
           drugClass: 'Thiazide-like diuretic',
@@ -370,6 +387,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Bisoprolol',
+          guidelineCitation: 'ESC 2018: Consider in heart failure or symptomatic angina',
           estimatedCost: 'Est. $14/mo (Tier 2)',
           dose: '5 mg PO daily',
           drugClass: 'Beta blocker',
