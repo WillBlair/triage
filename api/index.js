@@ -1,16 +1,18 @@
-import { createApp } from '../server/app.js'
-import { createAiService } from '../server/recommendations.js'
+export default async function handler(req, res) {
+  try {
+    const { createApp } = await import('../server/app.js')
+    const { createAiService } = await import('../server/recommendations.js')
 
-let app
-let aiService
-
-try {
-  aiService = createAiService()
-  app = createApp({ aiService })
-} catch (error) {
-  console.error('Failed to initialize serverless function', error)
-  // Fallback app if init fails, returns 500
-  app = (req, res) => res.status(500).json({ error: error.message || 'Initialization error' })
+    const aiService = createAiService()
+    const app = createApp({ aiService })
+    
+    // Pass the request/response to the Express app
+    return app(req, res)
+  } catch (error) {
+    console.error('Vercel cold-start error:', error)
+    res.status(500).json({
+      error: 'Serverless initialization failed: ' + error.message,
+      stack: error.stack
+    })
+  }
 }
-
-export default app
