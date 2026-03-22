@@ -22,7 +22,7 @@ export default function PatientLibraryPanel({ onOpenPatientDetail, savedPatients
         .toLowerCase()
       return blob.includes(q)
     })
-  }, [query])
+  }, [query, allPatients])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
