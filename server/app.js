@@ -3,6 +3,7 @@ import express from 'express'
 import multer from 'multer'
 import { createClient } from '@supabase/supabase-js'
 import { createIntakeRoutes } from './intake.js'
+import { sendTelegramMessage, setTelegramWebhook } from './telegram.js'
 
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -15,9 +16,114 @@ export function createApp({ aiService }) {
   const app = express()
 
   app.use(cors())
-  app.use(express.json({ limit: '5mb' }))
-
   createIntakeRoutes(app)
+
+  // ── Telegram Webhook ──
+  app.post('/api/telegram-webhook', async (request, response) => {
+    try {
+      const { message } = request.body || {}
+      if (!message || !message.text) return response.json({ ok: true })
+
+      const chatId = message.chat.id
+      const text = message.text
+
+      // Handle the /start link that patient clicks
+      if (text.startsWith('/start ')) {
+        const token = text.split(' ')[1]
+
+        if (supabase) {
+          // Link this Telegram chat ID to the intake token
+          const { error } = await supabase
+            .from('intake_tokens')
+            .update({ telegram_chat_id: chatId.toString() })
+            .eq('token', token)
+
+          if (!error) {
+            await sendTelegramMessage(
+              chatId,
+              `👋 Welcome! Dr. Blair has requested some health information before your visit.\n\n📋 <a href="https://triageplus.vercel.app/intake/${token}">Fill out your intake form here</a>\n\nThis takes about 3-5 minutes.`
+            )
+            return response.json({ ok: true })
+          } else {
+            console.error('Webhook Supabase error:', error)
+          }
+        }
+      }
+
+      // Default reply for any other messages right now
+      response.json({ ok: true })
+    } catch (error) {
+      console.error('Telegram webhook error:', error)
+      response.status(500).json({ error: error.message })
+    }
+  })
+
+  // ── Telegram Webhook Setup ──
+  app.get('/api/telegram-setup', async (req, res) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol
+    const host = req.headers['x-forwarded-host'] || req.get('host')
+    const url = `${protocol}://${host}/api/telegram-webhook`
+    
+    try {
+      const result = await setTelegramWebhook(url)
+      res.json({ success: true, url, result })
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+  })
+
+  // ── Weekly Follow-Up Cron ──
+  app.get('/api/cron/weekly-followup', async (request, response) => {
+    // Vercel Cron sends a Bearer token (if configured)
+    const authHeader = request.headers.authorization
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return response.status(401).json({ error: 'Unauthorized' })
+    }
+
+    try {
+      if (!supabase) return response.status(503).json({ error: 'Database not configured.' })
+
+      // Fetch recent prescriptions
+      const { data: prescriptions, error: rxError } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      
+      if (rxError) throw rxError
+
+      // Fetch intake tokens to get telegram_chat_ids
+      const { data: intakeTokens, error: tokenError } = await supabase
+        .from('intake_tokens')
+        .select('patient, telegram_chat_id')
+        .not('telegram_chat_id', 'is', null)
+
+      if (tokenError) throw tokenError
+
+      let messagesSent = 0
+      for (const rx of prescriptions) {
+        // Match the prescription to the patient's Telegram ID via name
+        const match = intakeTokens?.find(t => t.patient?.name === rx.patient_name)
+        if (!match || !match.telegram_chat_id) continue
+
+        // Send check-in message
+        const drugName = rx.selected_drug?.name || 'medication'
+        const firstName = rx.patient_name.split(' ')[0]
+        
+        // In a full production app, you would pass `rx.simulation` to Claude to generate
+        // a highly specific, side-effect-aware follow-up question.
+        const msg = `👋 Hi ${firstName}, it's your weekly check-in for your ${drugName} prescription.\n\nHow are you feeling this week? Any side effects or unexpected symptoms? Just reply here and Dr. Blair's team will review it.`
+
+        await sendTelegramMessage(match.telegram_chat_id, msg)
+        messagesSent++
+      }
+
+      response.json({ success: true, messagesSent })
+    } catch (error) {
+      console.error('Follow-up cron error:', error)
+      response.status(500).json({ error: error.message })
+    }
+  })
 
   // ── Save prescription data ──
   app.post('/api/prescriptions', async (request, response, next) => {

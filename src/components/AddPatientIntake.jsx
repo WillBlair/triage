@@ -601,7 +601,7 @@ export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profil
       }
       setIntakeLink({
         token: record.token,
-        url: `${window.location.origin}/intake/${record.token}`,
+        url: `https://t.me/triage_followup_bot?start=${record.token}`,
         expiresAt: record.expiresAt,
       })
     } catch (err) {
