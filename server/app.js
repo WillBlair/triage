@@ -36,10 +36,13 @@ export function createApp({ aiService }) {
       const { data, error } = await supabase.from('prescriptions').insert({
         doctor_id: doctorId || null,
         patient_name: patientProfile.patientName || 'Unknown',
+        patient_email: patientProfile.email || null,
+        medication_name: selectedDrug.name || selectedDrug.medication || null,
         patient_profile: patientProfile,
         selected_drug: selectedDrug,
         all_recommendations: allRecommendations || null,
         simulation: simulation || null,
+        prescribed_at: new Date().toISOString(),
       }).select('id').single()
 
       if (error) {
