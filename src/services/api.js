@@ -43,7 +43,7 @@ export async function runSimulation(profile, recommendation, onEvent) {
 
   if (!response.ok || !response.body) {
     const payload = await response.json().catch(() => ({}))
-    throw new Error(payload.error || 'Simulation request failed.')
+    throw new Error(payload.error || 'Monitoring scenario request failed.')
   }
 
   const reader = response.body.getReader()

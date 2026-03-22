@@ -31,6 +31,30 @@ function CompactMetrics({ title, rows }) {
   )
 }
 
+function SourceHighlights({ items }) {
+  if (!items?.length) {
+    return null
+  }
+
+  return (
+    <div className="space-y-2 border-t border-slate-200/80 pt-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        Chart quotes
+      </p>
+      <ul className="space-y-2">
+        {items.slice(0, 3).map((item, index) => (
+          <li
+            key={`${item}-${index}`}
+            className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm leading-relaxed text-slate-700"
+          >
+            &ldquo;{item}&rdquo;
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function Spinner({ className = '' }) {
   return (
     <div
@@ -114,6 +138,7 @@ function PatientSnapshot({ profile }) {
 
       <CompactMetrics title="Vitals & measurements" rows={profile.vitals} />
       <CompactMetrics title="Labs" rows={profile.labs} />
+      <SourceHighlights items={profile.sourceHighlights} />
 
       <div className="grid gap-4 border-t border-slate-200/80 pt-4 sm:grid-cols-3 sm:gap-6">
         <ListBlock title="Problems" items={profile.diagnoses} />

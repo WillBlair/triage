@@ -1,10 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
-import AddPatientIntake, { DEFAULT_INTAKE_FORM } from './components/AddPatientIntake'
-import AppSidebar, { SECTION } from './components/AppSidebar'
+import { DEFAULT_INTAKE_FORM } from './constants/intake'
+import { SECTION } from './constants/navigation'
+import AddPatientIntake from './components/AddPatientIntake'
+import AppSidebar from './components/AppSidebar'
 import PlaceholderSection from './components/PlaceholderSection'
 import PrescribeSummary from './components/PrescribeSummary'
 import RecommendationList from './components/RecommendationList'
 import SimulationPanel from './components/SimulationPanel'
+import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 import { getRecommendations, parseDocument, runSimulation } from './services/api'
 
 function ClinicalDisclaimer() {
@@ -14,7 +17,7 @@ function ClinicalDisclaimer() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/92 px-3 py-2 text-center text-[11px] leading-snug text-slate-600 shadow-[0_-4px_24px_rgba(15,23,42,0.06)] backdrop-blur-md sm:px-4 sm:text-xs"
     >
       <span className="font-semibold text-slate-700">Prototype.</span>{' '}
-      Illustrative / not clinically validated / not a substitute for professional care.
+      Illustrative projections for discussion. Not a substitute for clinical judgment or verified dosing.
     </aside>
   )
 }
@@ -32,21 +35,21 @@ const SECTION_HEADER = {
     description: 'Open a saved profile when your workspace is connected to persistent storage.',
   },
   [SECTION.RECOMMENDATIONS]: {
-    kicker: 'Decide',
-    title: 'Pick a treatment direction',
+    kicker: 'Compare',
+    title: 'Drug comparison',
     description: '',
   },
   [SECTION.SIMULATION]: {
-    kicker: 'Simulate',
-    title: 'Run the what-if',
+    kicker: 'Monitor',
+    title: 'Monitoring & follow-up scenario',
     description:
-      'Generate the eight-week projection first, then read risks and clinical pearls underneath.',
+      'Generate an educational multi-week scenario for the selected contrast option, then review projected trends, risks, and follow-up pearls.',
   },
   [SECTION.PRESCRIPTION]: {
-    kicker: 'Prescribe',
-    title: 'Prescribing summary',
+    kicker: 'Handoff',
+    title: 'Draft handoff text',
     description:
-      'Short excerpt from the last simulation run: copy for pharmacy messaging, then complete authorization in your real prescribing workflow.',
+      'Draft text derived from the last monitoring scenario. Use it as a handoff excerpt, then complete any real prescribing workflow elsewhere.',
   },
   [SECTION.FOLLOW_UP]: {
     kicker: 'Care plan',
@@ -124,8 +127,12 @@ function App() {
 
       setIsLoadingRecommendations(true)
       const nextRecommendations = await getRecommendations(parsedProfile)
-      setRecommendations(nextRecommendations)
-      setSelectedDrug(nextRecommendations.drugs[0] || null)
+      const sorted = {
+        ...nextRecommendations,
+        drugs: sortDrugsByModelFitRank(nextRecommendations.drugs ?? []),
+      }
+      setRecommendations(sorted)
+      setSelectedDrug(sorted.drugs[0] || null)
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Upload failed.')
     } finally {
@@ -153,7 +160,7 @@ function App() {
       setError(
         simulationError instanceof Error
           ? simulationError.message
-          : 'Simulation failed.',
+          : 'Monitoring scenario failed.',
       )
     } finally {
       setIsRunningSimulation(false)
@@ -177,11 +184,7 @@ function App() {
               Triage
             </p>
             <h1 className="mt-4 max-w-3xl font-serif text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:mt-5 sm:text-5xl sm:leading-[1.12]">
-              Turn a clinic PDF into treatment options you can compare
-              <span className="text-teal-700">
-                {' '}
-                — and a week-by-week picture of what might happen next.
-              </span>
+              Upload a chart. Compare three regimens side by side.
             </h1>
           </header>
           <div className="mt-10 flex flex-col gap-3 sm:mt-12 sm:flex-row sm:justify-center sm:gap-4 lg:justify-start">
@@ -217,7 +220,11 @@ function App() {
           ) : null}
 
           <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-50/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-            <div className="border-b border-slate-100 bg-linear-to-r from-teal-50/40 via-white to-slate-50/50 px-6 py-6 sm:px-8">
+            <div
+              className={`border-b border-slate-100 bg-linear-to-r from-teal-50/40 via-white to-slate-50/50 px-6 sm:px-8 ${
+                activeSection === SECTION.RECOMMENDATIONS ? 'py-4 sm:py-4' : 'py-6 sm:py-6'
+              }`}
+            >
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
                 {sectionMeta.kicker}
               </p>
@@ -229,7 +236,13 @@ function App() {
                 }
               >
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-serif text-2xl font-semibold text-slate-950 sm:text-3xl">
+                  <h2
+                    className={`font-serif font-semibold text-slate-950 ${
+                      activeSection === SECTION.RECOMMENDATIONS
+                        ? 'text-xl sm:text-2xl'
+                        : 'text-2xl sm:text-3xl'
+                    }`}
+                  >
                     {sectionMeta.title}
                   </h2>
                   {sectionMeta.description ? (
@@ -245,13 +258,19 @@ function App() {
                     onClick={() => setActiveSection(SECTION.RECOMMENDATIONS)}
                     className="w-full shrink-0 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40 sm:mt-1 sm:w-auto sm:self-start"
                   >
-                    Continue to options
+                    Continue to comparison
                   </button>
                 ) : null}
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 sm:px-8 sm:py-6">
+            <div
+              className={`min-h-0 flex-1 sm:px-8 ${
+                activeSection === SECTION.RECOMMENDATIONS
+                  ? 'flex flex-col overflow-y-auto overscroll-contain px-6 py-3 sm:py-4'
+                  : 'overflow-y-auto overscroll-contain px-6 py-5 sm:py-6'
+              }`}
+            >
               {activeSection === SECTION.ADD_PATIENT ? (
                 <AddPatientIntake
                   intakeForm={intakeForm}
@@ -300,7 +319,6 @@ function App() {
                   simulation={simulation}
                   isRunning={isRunningSimulation}
                   onRun={handleRunSimulation}
-                  onContinueToPrescribe={() => setActiveSection(SECTION.PRESCRIPTION)}
                 />
               ) : null}
 
@@ -312,23 +330,24 @@ function App() {
                     simulation={simulation}
                   />
                 ) : (
-                  <PlaceholderSection title="Run a simulation first">
+                  <PlaceholderSection title="Run a monitoring scenario first">
                     <p>
-                      The <strong className="font-semibold text-slate-800">Prescribe</strong> screen
-                      shows a compact version of your last eight-week projection so you can paste it
-                      for the pharmacist and pair it with your usual sign-off process.
+                      The <strong className="font-semibold text-slate-800">Draft handoff</strong>{' '}
+                      screen shows a compact version of your last eight-week scenario so you can
+                      paste draft text for a pharmacist or other recipient and pair it with your
+                      usual sign-off process.
                     </p>
                     <p className="mt-3 text-slate-500">
                       {!selectedDrug
-                        ? 'Choose a drug under Drug recommendation, then open Simulation.'
-                        : 'Open Simulation and run the projection—then return here or use Continue to Prescribe from that screen.'}
+                        ? 'Choose a regimen under Drug comparison, then open Monitoring & follow-up.'
+                        : 'Open Monitoring & follow-up and run the scenario, then return here or use Continue to handoff from that screen.'}
                     </p>
                     <button
                       type="button"
                       onClick={() => setActiveSection(SECTION.SIMULATION)}
                       className="mt-5 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
                     >
-                      Go to Simulation
+                      Go to monitoring
                     </button>
                   </PlaceholderSection>
                 )
@@ -386,42 +405,42 @@ function App() {
                 ) : null}
                 {activeSection === SECTION.ADD_PATIENT && !intakeReady && !isParsing && isLoadingRecommendations ? (
                   <span>
-                    Options generating — continue when the button above enables (summary is already visible).
+                    Comparison rows generating — continue when the button above enables (summary is already visible).
                   </span>
                 ) : null}
                 {activeSection === SECTION.ADD_PATIENT && intakeReady ? (
-                  <span>Chart summary and options are ready. Continue when the snapshot looks right.</span>
+                  <span>Chart summary and comparison rows are ready. Continue when the snapshot looks right.</span>
                 ) : null}
                 {activeSection === SECTION.RECOMMENDATIONS && isLoadingRecommendations ? (
-                  <span>Loading treatment options…</span>
+                  <span>Loading treatment contrast…</span>
                 ) : null}
                 {activeSection === SECTION.RECOMMENDATIONS &&
                 !isLoadingRecommendations &&
                 !recommendations?.drugs?.length ? (
-                  <span>Upload a chart under Add new patient to generate options.</span>
+                  <span>Upload a chart under Add new patient to generate a treatment contrast.</span>
                 ) : null}
                 {activeSection === SECTION.RECOMMENDATIONS &&
                 !isLoadingRecommendations &&
                 Boolean(recommendations?.drugs?.length) ? (
                   <span>
-                    Selected:{' '}
+                    Selected contrast:{' '}
                     <span className="font-semibold text-slate-700">{selectedDrug?.name || '—'}</span>
                   </span>
                 ) : null}
                 {activeSection === SECTION.SIMULATION && !selectedDrug ? (
-                  <span>Choose a regimen under Drug recommendation first.</span>
+                  <span>Choose a regimen under Drug comparison first.</span>
                 ) : null}
                 {activeSection === SECTION.SIMULATION && selectedDrug && !simulation ? (
-                  <span>Run the simulation when you are narrating the &quot;wow&quot; moment.</span>
+                  <span>Run the monitoring scenario when you are ready to discuss projected follow-up.</span>
                 ) : null}
                 {activeSection === SECTION.SIMULATION && selectedDrug && simulation ? (
-                  <span>Projection complete. Continue to Prescribe for a pharmacy-ready excerpt.</span>
+                  <span>Scenario complete. Continue to Draft handoff for editable text.</span>
                 ) : null}
                 {activeSection === SECTION.PRESCRIPTION && simulation && selectedDrug ? (
-                  <span>Summary is from the selected regimen and the last simulation run.</span>
+                  <span>Draft handoff text is based on the selected regimen and the last monitoring scenario.</span>
                 ) : null}
                 {activeSection === SECTION.PRESCRIPTION && (!simulation || !selectedDrug) ? (
-                  <span>Complete a simulation to populate this summary.</span>
+                  <span>Complete a monitoring scenario to populate this draft.</span>
                 ) : null}
                 {activeSection === SECTION.PROFILES ||
                 activeSection === SECTION.FOLLOW_UP ||
@@ -446,7 +465,7 @@ function App() {
                       onClick={() => setActiveSection(SECTION.SIMULATION)}
                       className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      Continue to simulation
+                      Continue to monitoring
                     </button>
                   </>
                 ) : null}
@@ -473,7 +492,7 @@ function App() {
                           onClick={() => setActiveSection(SECTION.PRESCRIPTION)}
                           className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500"
                         >
-                          Continue to Prescribe
+                          Continue to handoff
                         </button>
                       </>
                     ) : null}
@@ -486,7 +505,7 @@ function App() {
                       onClick={() => setActiveSection(SECTION.SIMULATION)}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
                     >
-                      Back to simulation
+                      Back to monitoring
                     </button>
                   </>
                 ) : null}

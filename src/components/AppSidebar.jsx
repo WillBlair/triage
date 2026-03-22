@@ -1,22 +1,4 @@
-export const SECTION = {
-  ADD_PATIENT: 'add-patient',
-  PROFILES: 'profiles',
-  RECOMMENDATIONS: 'recommendations',
-  SIMULATION: 'simulation',
-  PRESCRIPTION: 'prescription',
-  FOLLOW_UP: 'follow-up',
-  SETTINGS: 'settings',
-  DOCTOR_PROFILE: 'doctor-profile',
-}
-
-export const SIDEBAR_NAV = [
-  { id: SECTION.ADD_PATIENT, label: 'Add new patient' },
-  { id: SECTION.PROFILES, label: 'View existing patient profiles' },
-  { id: SECTION.RECOMMENDATIONS, label: 'Drug recommendation' },
-  { id: SECTION.SIMULATION, label: 'Simulation' },
-  { id: SECTION.PRESCRIPTION, label: 'Prescribe' },
-  { id: SECTION.FOLLOW_UP, label: 'Follow up' },
-]
+import { SECTION, SIDEBAR_NAV } from '../constants/navigation'
 
 const footerAccountBtn = (isActive) =>
   `w-full rounded-lg border px-3 py-2 text-left text-sm font-semibold shadow-sm transition ${
@@ -35,7 +17,7 @@ export default function AppSidebar({ activeSection, onSelectSection, onLogout })
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">Triage</p>
         <p className="mt-1 font-serif text-lg font-semibold tracking-tight text-slate-900">Workspace</p>
         <p className="mt-1 text-[11px] font-medium leading-snug text-slate-500">
-          Clinical decision support
+          Decision support, clinician in the loop
         </p>
       </div>
       <p className="px-5 pb-2 pt-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">

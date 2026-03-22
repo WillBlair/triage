@@ -20,7 +20,8 @@ const DEMO_PHARMACIES = [
 
 function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) {
   const lines = []
-  lines.push('PRESCRIBING SUMMARY (demo / not for clinical use)')
+  lines.push('DRAFT HANDOFF SUMMARY (demo / not for clinical use)')
+  lines.push('Verify regimen, dosing, destination, and chart fit before acting.')
   lines.push('')
   if (profile?.patientName) {
     lines.push(`Patient: ${profile.patientName}`)
@@ -38,13 +39,13 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
   }
   lines.push('')
   if (simulation?.summary) {
-    lines.push('Clinical note (from simulation):')
+    lines.push('Monitoring scenario note:')
     lines.push(simulation.summary)
     lines.push('')
   }
   if (simulation?.projectedMetric && simulation?.targetRange) {
     lines.push(
-      `Projected trajectory: ${simulation.projectedMetric} (target ${simulation.targetRange.low}–${simulation.targetRange.high})`,
+      `Illustrative follow-up trajectory: ${simulation.projectedMetric} (target ${simulation.targetRange.low}–${simulation.targetRange.high})`,
     )
     lines.push('')
   }
@@ -59,7 +60,7 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
   }
   const topRisks = (simulation?.riskScores || []).slice(0, 4)
   if (topRisks.length) {
-    lines.push('Risk themes (scores from model):')
+    lines.push('Illustrative risk themes (model scores):')
     for (const r of topRisks) {
       lines.push(`- ${r.label}: ${r.score}`)
     }
@@ -67,26 +68,25 @@ function buildSummaryPlainText({ profile, selectedDrug, simulation, pharmacy }) 
   }
   const pearls = (simulation?.takeaways || []).slice(0, 5)
   if (pearls.length) {
-    lines.push('Pearls for pharmacy / follow-up:')
+    lines.push('Handoff points / follow-up:')
     for (const p of pearls) {
       lines.push(`- ${p}`)
     }
   }
   lines.push('')
   if (pharmacy) {
-    lines.push('Pharmacy (demo selection):')
+    lines.push('Draft destination:')
     lines.push(`${pharmacy.name} — ${pharmacy.detail}`)
     lines.push('')
   }
-  lines.push('— Prescriber review & signature: __________________  Date: ______')
-  lines.push('— Pharmacist verification: __________________  Date: ______')
+  lines.push('— Clinician review & sign-off required before any prescription is placed')
+  lines.push('— Receiving pharmacy / recipient verification: __________________  Date: ______')
   return lines.join('\n')
 }
 
 export default function PrescribeSummary({ profile, selectedDrug, simulation }) {
   const [copied, setCopied] = useState(false)
   const [pharmacyId, setPharmacyId] = useState(DEMO_PHARMACIES[0].id)
-  const [pharmacyConfirmed, setPharmacyConfirmed] = useState(false)
 
   const selectedPharmacy = useMemo(
     () => DEMO_PHARMACIES.find((p) => p.id === pharmacyId) ?? DEMO_PHARMACIES[0],
@@ -99,9 +99,9 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
         profile,
         selectedDrug,
         simulation,
-        pharmacy: pharmacyConfirmed ? selectedPharmacy : null,
+        pharmacy: selectedPharmacy,
       }),
-    [profile, selectedDrug, simulation, pharmacyConfirmed, selectedPharmacy],
+    [profile, selectedDrug, simulation, selectedPharmacy],
   )
 
   const topEffects = useMemo(() => (simulation?.sideEffects || []).slice(0, 4), [simulation])
@@ -125,12 +125,12 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Pharmacist-ready excerpt
+            Draft handoff excerpt
           </p>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-            Condensed from the eight-week simulation so you can paste into your EHR, fax, or
-            pharmacy message—then complete your usual prescribing and sign-off steps outside this
-            prototype.
+            Condensed from the eight-week monitoring scenario so you can paste draft text into your
+            EHR, fax cover sheet, or pharmacy message. Verify before acting and complete real
+            prescribing and sign-off outside this prototype.
           </p>
         </div>
         <button
@@ -178,7 +178,7 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
         {simulation?.summary ? (
           <div className="mt-6 border-t border-slate-100 pt-6">
             <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Simulation summary
+              Monitoring scenario summary
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">{simulation.summary}</p>
           </div>
@@ -232,7 +232,7 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
         {topRisks.length > 0 ? (
           <div className="mt-6 border-t border-slate-100 pt-6">
             <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Risk themes (model scores)
+              Illustrative risk themes (model scores)
             </h3>
             <ul className="mt-2 flex flex-wrap gap-2">
               {topRisks.map((r) => (
@@ -249,90 +249,61 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
 
         <div className="mt-8 border-t border-slate-100 pt-6">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Pharmacy
+            Draft destination
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-            For ongoing meds—blood pressure, lipids, diabetes, and similar—electronic prescribing
-            usually ends with you confirming the order and choosing the patient&apos;s retail
-            pharmacy. This prototype mimics that step only; nothing is transmitted.
+            Select the receiving pharmacy to tailor the copied draft text. This prototype never
+            places an order, sends an eRx, or transmits a fax.
           </p>
-
-          {!pharmacyConfirmed ? (
-            <>
-              <ul className="mt-4 space-y-2" role="radiogroup" aria-label="Choose pharmacy">
-                {DEMO_PHARMACIES.map((p) => {
-                  const checked = p.id === pharmacyId
-                  return (
-                    <li key={p.id}>
-                      <label
-                        className={`flex cursor-pointer flex-col rounded-xl border px-4 py-3 transition sm:flex-row sm:items-center sm:justify-between ${
-                          checked
-                            ? 'border-teal-400 bg-teal-50/50 ring-1 ring-teal-200/80'
-                            : 'border-slate-200 bg-slate-50/40 hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <input
-                            type="radio"
-                            name="prescribe-pharmacy"
-                            value={p.id}
-                            checked={checked}
-                            onChange={() => setPharmacyId(p.id)}
-                            className="mt-1 size-4 shrink-0 border-slate-300 text-teal-600 focus:ring-teal-600"
-                          />
-                          <div className="min-w-0">
-                            <span className="font-semibold text-slate-900">{p.name}</span>
-                            <p className="mt-0.5 text-sm text-slate-600">{p.detail}</p>
-                          </div>
-                        </div>
-                      </label>
-                    </li>
-                  )
-                })}
-              </ul>
-              <button
-                type="button"
-                onClick={() => setPharmacyConfirmed(true)}
-                className="mt-4 w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.25)] transition hover:bg-teal-500 sm:w-auto"
-              >
-                Confirm and send to pharmacy
-              </button>
-            </>
-          ) : (
-            <div className="mt-4 space-y-3">
-              <div className="rounded-xl border border-teal-200 bg-teal-50/70 px-4 py-3 text-sm text-teal-950 ring-1 ring-teal-100">
-                <p className="font-semibold">Order confirmed for demo routing</p>
-                <p className="mt-1 text-teal-900/90">
-                  Selected: <span className="font-medium">{selectedPharmacy.name}</span>
-                  <span className="text-teal-800"> — {selectedPharmacy.detail}</span>
-                </p>
-                <p className="mt-2 text-xs text-teal-800/80">
-                  No eRx or fax was sent. In production this would queue to your prescribing network.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPharmacyConfirmed(false)}
-                className="text-sm font-semibold text-slate-600 underline-offset-2 hover:text-teal-800 hover:underline"
-              >
-                Change pharmacy
-              </button>
-            </div>
-          )}
+          <ul className="mt-4 space-y-2" role="radiogroup" aria-label="Choose draft destination">
+            {DEMO_PHARMACIES.map((p) => {
+              const checked = p.id === pharmacyId
+              return (
+                <li key={p.id}>
+                  <label
+                    className={`flex cursor-pointer flex-col rounded-xl border px-4 py-3 transition sm:flex-row sm:items-center sm:justify-between ${
+                      checked
+                        ? 'border-teal-400 bg-teal-50/50 ring-1 ring-teal-200/80'
+                        : 'border-slate-200 bg-slate-50/40 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <input
+                        type="radio"
+                        name="handoff-pharmacy"
+                        value={p.id}
+                        checked={checked}
+                        onChange={() => setPharmacyId(p.id)}
+                        className="mt-1 size-4 shrink-0 border-slate-300 text-teal-600 focus:ring-teal-600"
+                      />
+                      <div className="min-w-0">
+                        <span className="font-semibold text-slate-900">{p.name}</span>
+                        <p className="mt-0.5 text-sm text-slate-600">{p.detail}</p>
+                      </div>
+                    </div>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-700">
+            Draft currently addressed to <span className="font-semibold">{selectedPharmacy.name}</span>
+            <span className="text-slate-500"> — {selectedPharmacy.detail}</span>.
+          </div>
         </div>
 
         <div className="mt-8 grid gap-4 border-t border-dashed border-slate-200 pt-6 sm:grid-cols-2">
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Prescriber
+              Clinician
             </p>
-            <p className="mt-3 text-sm text-slate-500">Reviewed and authorized</p>
+            <p className="mt-3 text-sm text-slate-500">Reviewed before external sign-off</p>
             <div className="mt-8 border-b border-slate-300 pb-1 text-xs text-slate-400">Signature</div>
             <div className="mt-3 border-b border-slate-300 pb-1 text-xs text-slate-400">Date</div>
           </div>
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Pharmacist
+              Pharmacy / recipient
             </p>
             <p className="mt-3 text-sm text-slate-500">Verification / counseling documented</p>
             <div className="mt-8 border-b border-slate-300 pb-1 text-xs text-slate-400">Signature</div>

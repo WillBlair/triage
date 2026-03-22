@@ -1,14 +1,14 @@
 # Triage
 
-**Triage** is a small **clinical decision-support demo** (hackathon-style): a three-step wizard that ingests **one discharge or clinic PDF**, uses **Claude** to build a structured patient snapshot, surfaces **three comparable drug regimens** with short rationale, then runs an **eight-week “what-if” projection** for the option you select—timeline chart first, then risk scores, side effects, and clinical pearls.
+**Triage** is a small **clinical decision-support demo** (hackathon-style): a three-step wizard that ingests **one discharge or clinic PDF**, uses **Claude** to build a structured patient snapshot, surfaces **three comparable drug regimens** with short rationale, then runs an **eight-week monitoring and follow-up scenario** for the option you select.
 
-**Summary:** React (Vite) front end, Express API, Anthropic Messages API for parse, recommendations, and simulation (NDJSON stream with visible analysis chunks plus final structured projection). Outputs are **generative and illustrative**, not validated for real care.
+**Summary:** React (Vite) front end, Express API, Anthropic Messages API for parse, comparison generation, and monitoring scenarios (NDJSON stream with visible analysis chunks plus final structured projection). Outputs are **generative and illustrative**, not validated for real care.
 
 ## Demo flow
 
 1. **Intake** — Upload a single clinical PDF; the panel becomes a patient snapshot (problems, meds, labs).
-2. **Decide** — Pick one therapeutic row to carry forward.
-3. **Simulate** — Run the model; the **timeline chart renders first**, then risk and effect summaries below.
+2. **Compare** — Review three differentiated therapeutic rows and carry one forward.
+3. **Monitor** — Run the model; the **timeline chart renders first**, then risk and follow-up summaries below.
 
 ## Local setup
 
