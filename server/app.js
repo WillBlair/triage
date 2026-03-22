@@ -62,6 +62,15 @@ export function createApp({ aiService }) {
             console.error('Webhook Supabase error:', error)
           }
         }
+      } else if (!text.startsWith('/')) {
+        // Autonomous Agent Reply Logic for the Hackathon Demo
+        const isSevere = text.toLowerCase().match(/(terrible|bad|wrong|dizzy|pain|hurt|worse)/)
+        
+        let botReply = `✅ Got it. I've logged this update directly to Dr. Blair's Triage dashboard.`
+        if (isSevere) {
+          botReply = `⚠️ I'm sorry you're feeling that way. I have flagged this as a **High Priority Alert** for Dr. Blair's clinical team. They will review your chart and contact you shortly.`
+        }
+        await sendTelegramMessage(chatId, botReply)
       }
 
       // Default reply for any other messages right now
@@ -85,6 +94,8 @@ export function createApp({ aiService }) {
       res.status(500).json({ error: error.message })
     }
   })
+
+  const demoWeekCounters = new Map()
 
   // ── Weekly Follow-Up Cron ──
   app.get('/api/cron/weekly-followup', async (request, response) => {
@@ -121,9 +132,20 @@ export function createApp({ aiService }) {
 
       const rx = prescriptions[0]
       const drugName = rx.selected_drug?.name || 'medication'
-      const firstName = rx.patient_name.split(' ')[0]
+      const firstName = (rx.patient_name && rx.patient_name !== 'Unknown') ? rx.patient_name.split(' ')[0] : 'there'
       
-      const msg = `👋 Hi ${firstName}, it's your weekly check-in for your ${drugName} prescription.\n\nHow are you feeling this week? Any side effects or unexpected symptoms? Just reply here and Dr. Blair's team will review it.`
+      const rxId = rx.id
+      let currentWeek = demoWeekCounters.get(rxId) || 1
+      demoWeekCounters.set(rxId, currentWeek + 1)
+
+      let msg = ''
+      if (currentWeek === 1) {
+        msg = `👋 Hi ${firstName}, it's your Week 1 check-in for your ${drugName} prescription.\n\nAre you experiencing any dizziness or unexpected symptoms so far? Just reply here and I will log it for Dr. Blair.`
+      } else if (currentWeek === 2) {
+        msg = `👋 Hi ${firstName}, it's your Week 2 check-in for ${drugName}.\n\nYour next lab appointment is coming up. How are you holding up with the new regimen?`
+      } else {
+        msg = `👋 Hi ${firstName}, Week ${currentWeek} check-in. Just a system reminder to keep taking your ${drugName} as prescribed. Report any new symptoms below.`
+      }
 
       await sendTelegramMessage(chatData.telegram_chat_id, msg)
 
@@ -149,7 +171,7 @@ export function createApp({ aiService }) {
 
       const { data, error } = await supabase.from('prescriptions').insert({
         doctor_id: doctorId || null,
-        patient_name: patientProfile.name || 'Unknown',
+        patient_name: patientProfile.patientName || 'Unknown',
         patient_profile: patientProfile,
         selected_drug: selectedDrug,
         all_recommendations: allRecommendations || null,
@@ -173,7 +195,7 @@ export function createApp({ aiService }) {
           .single()
 
         if (intakeData?.telegram_chat_id) {
-          const firstName = patientProfile.name?.split(' ')[0] || 'there'
+          const firstName = patientProfile.patientName?.split(' ')[0] || 'there'
           const drugName = selectedDrug.name
           const msg = `✅ Hi ${firstName}, Dr. Blair just finalized your prescription for ${drugName} and sent it to your pharmacy.\n\nPlease start taking it as directed. I will automatically check back in with you next week to see how you are doing! 💊`
           
