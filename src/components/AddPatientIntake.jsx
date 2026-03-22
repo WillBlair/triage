@@ -18,20 +18,39 @@ const DOCUMENT_TYPES = [
 const CONCERN_OPTIONS = ['Hypertension', 'Hypotension']
 
 const INTAKE_SECTION_DEFS = [
-  { id: 'homeBp', label: 'Home BP readings', defaultOn: true },
-  { id: 'symptoms', label: 'Symptoms checklist', defaultOn: true },
-  { id: 'medsAllergies', label: 'Medications & allergies', defaultOn: true },
+  { id: 'homeBp', label: 'Home BP readings', defaultOn: false },
+  { id: 'symptoms', label: 'Symptoms checklist', defaultOn: false },
+  { id: 'medsAllergies', label: 'Medications & allergies', defaultOn: false },
   { id: 'lifestyle', label: 'Lifestyle (diet, exercise, smoking)', defaultOn: false },
   { id: 'uploads', label: 'File uploads (labs, prior records)', defaultOn: false },
 ]
 
-/** Name, DOB, sex, and MRN required before Continue / generating an intake link. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const MRN_RE = /^[A-Z0-9][A-Z0-9\-.]{4,11}$/i
+
+function isValidEmail(email) {
+  return EMAIL_RE.test(email?.trim() ?? '')
+}
+
+function isValidMrn(mrn) {
+  return MRN_RE.test(mrn?.trim() ?? '')
+}
+
+/** Strips non-digits and checks for exactly 10 digits (US number). Empty is valid (optional). */
+function isValidPhone(phone) {
+  const raw = (phone ?? '').replace(/\D/g, '')
+  return raw.length === 0 || raw.length === 10
+}
+
+/** Name, DOB, sex, MRN, valid email, and valid phone (if provided) required before Continue. */
 function isBasicsDraftComplete(draft) {
   return (
     Boolean(draft?.name?.trim()) &&
     Boolean(String(draft?.dob ?? '').trim()) &&
     Boolean(String(draft?.sex ?? '').trim()) &&
-    Boolean(draft?.mrn?.trim())
+    isValidMrn(draft?.mrn) &&
+    isValidEmail(draft?.email) &&
+    isValidPhone(draft?.phone)
   )
 }
 
@@ -138,7 +157,7 @@ function StepBasics({ draft, onDraftChange }) {
           Required identifiers for a draft profile. More detail can come from the chart or patient intake.
         </p>
         <p className="mt-2 text-xs font-medium text-slate-600">
-          Patient name, date of birth, sex, and MRN / identifier are required to continue.
+          Patient name, date of birth, sex, MRN / identifier, and email are required to continue.
         </p>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <div>
@@ -149,7 +168,10 @@ function StepBasics({ draft, onDraftChange }) {
               required
               placeholder="e.g. Jane Doe"
               value={draft.name || ''}
-              onChange={(e) => patch({ name: e.target.value })}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^a-zA-Z\s]/g, '')
+                patch({ name: v })
+              }}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
             />
           </div>
@@ -159,6 +181,7 @@ function StepBasics({ draft, onDraftChange }) {
               id="patient-dob"
               type="date"
               required
+              max={new Date().toISOString().split('T')[0]}
               value={draft.dob || ''}
               onChange={(e) => patch({ dob: e.target.value })}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
@@ -185,11 +208,60 @@ function StepBasics({ draft, onDraftChange }) {
               id="patient-mrn"
               type="text"
               required
-              placeholder="e.g. clinic MRN or last 4 digits"
+              placeholder="e.g. MRN-12345 or AB12345"
               value={draft.mrn || ''}
               onChange={(e) => patch({ mrn: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-200"
+              className={`mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+                draft.mrn && !isValidMrn(draft.mrn)
+                  ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-200'
+                  : 'border-slate-200 focus:border-teal-400 focus:ring-teal-200'
+              }`}
             />
+            {draft.mrn && !isValidMrn(draft.mrn) && (
+              <p className="mt-1 text-xs text-rose-500">
+                {'5\u201312 characters: letters, numbers, dashes, or dots'}
+              </p>
+            )}
+          </div>
+          <div>
+            <FieldLabel id="patient-email">Patient email</FieldLabel>
+            <input
+              id="patient-email"
+              type="email"
+              required
+              placeholder="e.g. jane@example.com"
+              value={draft.email || ''}
+              onChange={(e) => patch({ email: e.target.value })}
+              className={`mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+                draft.email && !isValidEmail(draft.email)
+                  ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-200'
+                  : 'border-slate-200 focus:border-teal-400 focus:ring-teal-200'
+              }`}
+            />
+            {draft.email && !isValidEmail(draft.email) && (
+              <p className="mt-1 text-xs text-rose-500">Enter a valid email address</p>
+            )}
+          </div>
+          <div>
+            <FieldLabel id="patient-phone" optional>Phone number</FieldLabel>
+            <input
+              id="patient-phone"
+              type="tel"
+              placeholder="e.g. 5551234567"
+              value={draft.phone || ''}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, '').slice(0, 10)
+                patch({ phone: v })
+              }}
+              className={`mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+                draft.phone && !isValidPhone(draft.phone)
+                  ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-200'
+                  : 'border-slate-200 focus:border-teal-400 focus:ring-teal-200'
+              }`}
+            />
+            {draft.phone && !isValidPhone(draft.phone) && (
+              <p className="mt-1 text-xs text-rose-500">Enter a 10-digit US phone number</p>
+            )}
           </div>
         </div>
       </div>
@@ -244,10 +316,16 @@ function StepSendIntake({
   intakeLink,
   onGenerateLink,
   onRevokeLink,
+  patientEmail,
+  patientName,
+  doctorEmail,
+  doctorName,
 }) {
   const [message, setMessage] = useState('')
   const [expiryHours, setExpiryHours] = useState(48)
   const [copied, setCopied] = useState(false)
+  const [emailStatus, setEmailStatus] = useState('') // '' | 'sending' | 'sent' | 'error'
+  const [emailError, setEmailError] = useState('')
 
   const toggleSection = (id, value) => {
     onSectionsChange((prev) => ({ ...prev, [id]: value }))
@@ -265,6 +343,34 @@ function StepSendIntake({
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Fallback: select a hidden input
+    }
+  }
+
+  const handleSendEmail = async () => {
+    if (!intakeLink?.url || !patientEmail) return
+    setEmailStatus('sending')
+    setEmailError('')
+    try {
+      const res = await fetch('/api/send-intake-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientEmail,
+          patientName,
+          doctorName,
+          doctorEmail,
+          intakeUrl: intakeLink.url,
+          message,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to send email.')
+      }
+      setEmailStatus('sent')
+    } catch (err) {
+      setEmailStatus('error')
+      setEmailError(err instanceof Error ? err.message : 'Failed to send email.')
     }
   }
 
@@ -345,7 +451,7 @@ function StepSendIntake({
             {!basicsComplete ? (
               <p className="mt-2 text-xs text-slate-500">
                 Go back to <strong className="font-semibold text-slate-700">Basics</strong> and fill patient name,
-                date of birth, sex, and MRN to generate a link.
+                date of birth, sex, MRN, and email to generate a link.
               </p>
             ) : null}
           </>
@@ -377,15 +483,40 @@ function StepSendIntake({
                 Revoke link
               </button>
             </div>
-            {/* QR placeholder */}
-            <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-6">
-              <div className="text-center">
-                <div className="mx-auto grid h-24 w-24 place-items-center rounded-lg bg-slate-100">
-                  <span className="text-3xl text-slate-300">⊞</span>
+            {/* Email to patient */}
+            {patientEmail && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Send via email</p>
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-white px-3 py-2 border border-slate-100">
+                  <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                  </svg>
+                  <span className="text-sm text-slate-700">{patientEmail}</span>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">QR code (scan to open)</p>
+                {doctorEmail && (
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    From: {doctorName || doctorEmail} (reply-to: {doctorEmail})
+                  </p>
+                )}
+                {emailStatus === 'sent' ? (
+                  <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-sm font-medium text-emerald-700">
+                    Email sent successfully
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendEmail}
+                    disabled={emailStatus === 'sending'}
+                    className="mt-3 w-full rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {emailStatus === 'sending' ? 'Sending\u2026' : 'Send to patient\u2019s email'}
+                  </button>
+                )}
+                {emailStatus === 'error' && emailError && (
+                  <p className="mt-2 text-xs text-rose-600">{emailError}</p>
+                )}
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
@@ -592,9 +723,9 @@ function StepChartMerge({
 
 /* ── Main component ── */
 
-export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profileCardProps }) {
+export default function AddPatientIntake({ intakeForm, onIntakeChange, doctorEmail, doctorName, ...profileCardProps }) {
   const [step, setStep] = useState(0)
-  const [draft, setDraft] = useState({ name: '', dob: '', sex: '', mrn: '', concerns: [], notes: '' })
+  const [draft, setDraft] = useState({ name: '', dob: '', sex: '', mrn: '', email: '', phone: '', concerns: [], notes: '' })
   const [intakeSections, setIntakeSections] = useState(() => {
     const defaults = {}
     INTAKE_SECTION_DEFS.forEach((s) => { defaults[s.id] = s.defaultOn })
@@ -610,7 +741,7 @@ export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profil
   const handleGenerateLink = useCallback(async ({ message, expiryHours }) => {
     setLinkError('')
     if (!isBasicsDraftComplete(draft)) {
-      setLinkError('Complete Basics: patient name, date of birth, sex, and MRN / identifier.')
+      setLinkError('Complete Basics: patient name, date of birth, sex, MRN / identifier, and email.')
       return
     }
     try {
@@ -618,7 +749,7 @@ export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profil
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patient: { name: draft.name, dob: draft.dob, sex: draft.sex, mrn: draft.mrn, concerns: draft.concerns },
+          patient: { name: draft.name, dob: draft.dob, sex: draft.sex, mrn: draft.mrn, email: draft.email, phone: draft.phone, concerns: draft.concerns },
           sections: intakeSections,
           expiresInHours: expiryHours,
           message,
@@ -706,6 +837,10 @@ export default function AddPatientIntake({ intakeForm, onIntakeChange, ...profil
           intakeLink={intakeLink}
           onGenerateLink={handleGenerateLink}
           onRevokeLink={handleRevokeLink}
+          patientEmail={draft.email}
+          patientName={draft.name}
+          doctorEmail={doctorEmail}
+          doctorName={doctorName}
         />
       )}
       {step === 2 && (

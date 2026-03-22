@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_INTAKE_FORM } from './constants/intake'
 import { SECTION } from './constants/navigation'
 import AddPatientIntake from './components/AddPatientIntake'
@@ -101,23 +101,25 @@ function App() {
   const [doctorProfile, setDoctorProfile] = useState(null)
   const [workspaceName, setWorkspaceName] = useState('')
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [doctorEmail, setDoctorEmail] = useState('')
+  const hasSignedIn = useRef(false)
 
-  // When a different user signs in, reset onboarding so they get their own experience
-  const syncUserData = useCallback((session) => {
+  // When a user signs in, load their profile from Supabase
+  const syncUserData = useCallback(async (session) => {
     if (!session) return
-    try {
-      const storedUserId = localStorage.getItem('triage_user_id')
-      if (storedUserId !== session.user.id) {
-        // Different user (or first ever login) — clear previous user's onboarding data
-        localStorage.removeItem('triage_onboarded')
-        localStorage.removeItem('triage_doctor')
-        localStorage.removeItem('triage_workspace')
-        localStorage.setItem('triage_user_id', session.user.id)
-        setOnboardingComplete(false)
-        setDoctorProfile(null)
-        setWorkspaceName('')
-      }
-    } catch { /* storage unavailable */ }
+    const userId = session.user.id
+    setCurrentUserId(userId)
+    setDoctorEmail(session.user.email || '')
+    const saved = await fetchDoctorProfile(userId)
+    if (saved) {
+      setDoctorProfile(saved.doctorProfile)
+      setWorkspaceName(saved.workspaceName)
+      setOnboardingComplete(saved.onboarded)
+    } else {
+      setDoctorProfile(null)
+      setWorkspaceName('')
+      setOnboardingComplete(false)
+    }
   }, [])
 
   // Resolve initial view: check for existing session before rendering anything
@@ -133,6 +135,7 @@ function App() {
         supabase.auth.signOut()
         setView(VIEW.EMAIL_CONFIRMED)
       } else if (session) {
+        hasSignedIn.current = true
         syncUserData(session)
         setView(VIEW.WORKSPACE)
       } else {
@@ -141,8 +144,10 @@ function App() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Ignore the session created by email confirmation — we handle that above
-      if (event === 'SIGNED_IN' && session && view !== VIEW.EMAIL_CONFIRMED) {
+      // Only act on genuine first sign-in. Supabase re-emits SIGNED_IN on
+      // tab focus, token refresh, etc. — ignore those to keep the UI stable.
+      if (event === 'SIGNED_IN' && session && !hasSignedIn.current) {
+        hasSignedIn.current = true
         syncUserData(session)
         setView(VIEW.WORKSPACE)
         setActiveSection(SECTION.ADD_PATIENT)
@@ -225,10 +230,14 @@ function App() {
 
   const handleUpdateDoctorProfile = useCallback((updated) => {
     setDoctorProfile(updated)
-    try {
-      localStorage.setItem('triage_doctor', JSON.stringify(updated))
-    } catch { /* storage unavailable */ }
-  }, [])
+    if (currentUserId) {
+      upsertDoctorProfile(currentUserId, {
+        doctorProfile: updated,
+        workspaceName,
+        onboarded: true,
+      })
+    }
+  }, [currentUserId, workspaceName])
 
   const handleSelectFile = async (file) => {
     setFileName(file.name)
@@ -380,11 +389,13 @@ function App() {
             setWorkspaceName(ws.workspaceName)
             setOnboardingComplete(true)
             setActiveSection(SECTION.ADD_PATIENT)
-            try {
-              localStorage.setItem('triage_onboarded', 'true')
-              localStorage.setItem('triage_doctor', JSON.stringify(dp))
-              localStorage.setItem('triage_workspace', ws.workspaceName)
-            } catch { /* storage unavailable */ }
+            if (currentUserId) {
+              upsertDoctorProfile(currentUserId, {
+                doctorProfile: dp,
+                workspaceName: ws.workspaceName,
+                onboarded: true,
+              })
+            }
           }}
         />
       </>
@@ -479,6 +490,8 @@ function App() {
                   isLoadingRecommendations={isLoadingRecommendations}
                   onSelectFile={handleSelectFile}
                   error=""
+                  doctorEmail={doctorEmail}
+                  doctorName={doctorProfile?.displayName || ''}
                 />
               ) : null}
 

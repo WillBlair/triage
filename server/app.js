@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import multer from 'multer'
 import { createIntakeRoutes } from './intake.js'
+import { createEmailRoutes } from './email.js'
 
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -12,6 +13,7 @@ export function createApp({ aiService }) {
   app.use(express.json())
 
   createIntakeRoutes(app)
+  createEmailRoutes(app)
 
   app.get('/api/health', (_request, response) => {
     response.json({ ok: true })
