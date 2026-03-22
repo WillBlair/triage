@@ -51,7 +51,7 @@ const SECTION_HEADER = {
   },
   [SECTION.SIMULATION]: {
     kicker: 'Monitor',
-    title: 'Monitoring & follow-up scenario',
+    title: 'Monitoring scenario',
     description:
       'Generate an educational multi-week scenario for the selected contrast option and review the projected trajectory in the chart.',
   },

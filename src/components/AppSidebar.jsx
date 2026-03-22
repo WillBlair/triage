@@ -1,13 +1,23 @@
 import { useState } from 'react'
 import { SECTION, SIDEBAR_NAV } from '../constants/navigation'
 
-function AvatarInitials({ name }) {
+function SidebarAvatar({ name, avatarUrl }) {
   const initials = (name || '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join('')
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-200/80"
+      />
+    )
+  }
 
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
@@ -75,7 +85,7 @@ export default function AppSidebar({ activeSection, onSelectSection, onLogout, d
           onClick={() => setPopoverOpen((v) => !v)}
           className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
         >
-          <AvatarInitials name={displayName} />
+          <SidebarAvatar name={displayName} avatarUrl={doctorProfile?.avatarUrl} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-900">{displayName || 'Doctor'}</p>
             {displayHospital && (
