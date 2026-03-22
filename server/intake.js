@@ -1,8 +1,8 @@
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
+import { sendTelegramMessage } from './telegram.js'
 
 // ── Supabase client (server-side) ──
-// Uses the same env vars as the frontend client.
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
@@ -97,8 +97,9 @@ export function createIntakeRoutes(router) {
     if (!String(patient.sex ?? '').trim()) {
       return res.status(400).json({ error: 'Sex is required.' })
     }
-    if (!String(patient.mrn ?? '').trim()) {
-      return res.status(400).json({ error: 'MRN or identifier is required.' })
+    const handleRaw = String(patient.mrn ?? '').trim()
+    if (!handleRaw) {
+      return res.status(400).json({ error: 'Telegram handle is required.' })
     }
 
     const token = generateToken()
@@ -114,7 +115,31 @@ export function createIntakeRoutes(router) {
     }
 
     await dbInsert(record)
-    res.status(201).json(record)
+
+    // Direct Telegram Send Hackathon Flow
+    // If the input starts with '@', look up the chat_id in telegram_users
+    let msgSentToPatient = false
+    if (handleRaw.startsWith('@') && useSupabase) {
+      const handleLower = handleRaw.toLowerCase()
+      const { data } = await supabase
+        .from('telegram_users')
+        .select('chat_id')
+        .eq('username', handleLower)
+        .single()
+      
+      if (data?.chat_id) {
+        // Send the intake link instantly to their Telegram!
+        const intakeUrl = `https://triageplus.vercel.app/intake/${token}`
+        const text = `👋 Hi ${patient.name.split(' ')[0]},\n\nDr. Blair has requested some health information before your visit.\n\n📋 <a href="${intakeUrl}">Fill out your intake form here</a>\n\nThis takes about 3-5 minutes.`
+        await sendTelegramMessage(data.chat_id, text)
+        msgSentToPatient = true
+
+        // Link the chat ID to the intake token automatically
+        await supabase.from('intake_tokens').update({ telegram_chat_id: data.chat_id }).eq('token', token)
+      }
+    }
+
+    res.status(201).json({ ...record, msgSentToPatient })
   })
 
   // Patient validates token and gets config

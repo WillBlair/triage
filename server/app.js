@@ -26,6 +26,19 @@ export function createApp({ aiService }) {
 
       const chatId = message.chat.id
       const text = message.text
+      const username = message.from?.username ? `@${message.from.username}` : null
+
+      if (supabase && username) {
+        // For the hackathon demo: save their username so the doctor can just type it in the UI and the bot can find their chat ID.
+        // We can just upsert this into a simple table or even the doctor_profiles table if we want, 
+        // but let's assume we have a way to store it. Actually, the easiest hack for now is to use 
+        // the `intake_tokens` table if they have one, OR just tell the user to make a simple `telegram_users` table.
+        // Let's upsert to a `telegram_users` table.
+        await supabase.from('telegram_users').upsert({
+          username: username.toLowerCase(),
+          chat_id: chatId.toString()
+        }, { onConflict: 'username' })
+      }
 
       // Handle the /start link that patient clicks
       if (text.startsWith('/start ')) {
