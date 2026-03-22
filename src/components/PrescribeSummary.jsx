@@ -172,6 +172,16 @@ export default function PrescribeSummary({ profile, selectedDrug, simulation }) 
             {selectedDrug?.drugClass ? (
               <p className="mt-1 text-sm text-slate-500">{selectedDrug.drugClass}</p>
             ) : null}
+            {selectedDrug?.estimatedCost && (
+              <div className="mt-2 text-left">
+                <span className="inline-flex items-center gap-1 rounded bg-slate-100/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200/80" title="Out-of-pocket estimate">
+                  <svg className="h-[10px] w-[10px] text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {selectedDrug.estimatedCost}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

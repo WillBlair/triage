@@ -37,6 +37,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Losartan',
+          estimatedCost: 'Est. $9/mo (Tier 1)',
           dose: '50 mg PO daily',
           drugClass: 'ARB',
           fitScore: 88,
@@ -46,6 +47,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: '12.5 mg PO daily',
           drugClass: 'Thiazide-like diuretic',
           fitScore: 71,
@@ -55,6 +57,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Amlodipine',
+          estimatedCost: 'Est. $6/mo (Tier 1)',
           dose: '10 mg PO daily',
           drugClass: 'Dihydropyridine CCB',
           fitScore: 62,
@@ -97,6 +100,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Amlodipine',
+          estimatedCost: 'Est. $6/mo (Tier 1)',
           dose: '5 mg PO daily → titrate',
           drugClass: 'Dihydropyridine CCB',
           fitScore: 87,
@@ -106,6 +110,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Spironolactone',
+          estimatedCost: 'Est. $11/mo (Tier 1)',
           dose: '25 mg PO daily',
           drugClass: 'MRA',
           fitScore: 72,
@@ -115,6 +120,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Replace HCTZ at 12.5 mg daily',
           drugClass: 'Thiazide-like diuretic',
           fitScore: 58,
@@ -156,6 +162,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Metoprolol',
+          estimatedCost: 'Est. $7/mo (Tier 1)',
           dose: 'Reduce to 50 mg daily (or split BID)',
           drugClass: 'Beta blocker',
           fitScore: 86,
@@ -165,6 +172,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Midodrine',
+          estimatedCost: 'Est. $25/mo (Tier 2)',
           dose: '2.5–5 mg PO before upright periods',
           drugClass: 'Alpha-1 agonist',
           fitScore: 70,
@@ -174,6 +182,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Fludrocortisone',
+          estimatedCost: 'Est. $18/mo (Tier 1)',
           dose: '0.1 mg PO daily',
           drugClass: 'Mineralocorticoid',
           fitScore: 55,
@@ -215,6 +224,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Ambulatory BP monitoring',
+          estimatedCost: 'Requires PA / $50-$200',
           dose: '24h study before med change',
           drugClass: 'Diagnostic',
           fitScore: 90,
@@ -224,6 +234,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Amlodipine',
+          estimatedCost: 'Est. $6/mo (Tier 1)',
           dose: '5 mg PO daily',
           drugClass: 'Dihydropyridine CCB',
           fitScore: 68,
@@ -233,6 +244,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: '12.5 mg PO daily',
           drugClass: 'Thiazide-like diuretic',
           fitScore: 52,
@@ -275,6 +287,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Lisinopril',
+          estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Reduce to 20 mg PO daily',
           drugClass: 'ACE inhibitor',
           fitScore: 88,
@@ -284,6 +297,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'HCTZ',
+          estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Reduce to 12.5 mg or hold',
           drugClass: 'Thiazide diuretic',
           fitScore: 71,
@@ -293,6 +307,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Midodrine',
+          estimatedCost: 'Est. $25/mo (Tier 2)',
           dose: '2.5 mg PO PRN upright (if still symptomatic)',
           drugClass: 'Alpha-1 agonist',
           fitScore: 48,
@@ -335,6 +350,7 @@ export const DEMO_PATIENTS = [
       drugs: [
         {
           name: 'Spironolactone',
+          estimatedCost: 'Est. $11/mo (Tier 1)',
           dose: '25 mg PO daily',
           drugClass: 'MRA',
           fitScore: 89,
@@ -344,6 +360,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Chlorthalidone',
+          estimatedCost: 'Est. $4/mo (Tier 1)',
           dose: 'Replace HCTZ at 12.5–25 mg daily',
           drugClass: 'Thiazide-like diuretic',
           fitScore: 66,
@@ -353,6 +370,7 @@ export const DEMO_PATIENTS = [
         },
         {
           name: 'Bisoprolol',
+          estimatedCost: 'Est. $14/mo (Tier 2)',
           dose: '5 mg PO daily',
           drugClass: 'Beta blocker',
           fitScore: 54,

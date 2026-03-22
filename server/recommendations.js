@@ -40,6 +40,7 @@ Return JSON with this shape:
       "fitScore": "integer 0–100, higher = stronger patient-specific fit; best option highest",
       "rationale": "string — exactly ONE tight sentence, max ~18 words; no second sentence",
       "cautions": ["string — max 2 items; each item one short phrase, max ~10 words"],
+      "estimatedCost": "string — e.g. 'Est. $10/mo', 'Est. $4-10/mo', 'Tier 1'",
       "isNominalFit": false
     }
   ]

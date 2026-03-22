@@ -90,7 +90,17 @@ function OptionRow({ rank, drug, isSelected, onSelect }) {
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-sm leading-snug text-slate-600">{drug.dose}</p>
+          <div className="mt-0.5 flex items-center gap-2">
+            <p className="text-sm leading-snug text-slate-600">{drug.dose}</p>
+            {drug.estimatedCost && (
+              <span className="inline-flex items-center gap-1 rounded bg-slate-100/80 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200/80" title="Out-of-pocket estimate">
+                <svg className="h-[10px] w-[10px] text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {drug.estimatedCost}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="shrink-0 pt-0.5 text-xs font-semibold text-slate-500 sm:text-sm">
