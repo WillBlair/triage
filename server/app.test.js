@@ -35,6 +35,19 @@ describe('createApp', () => {
     expect(response.body.error).toMatch(/document/i)
   })
 
+  it('rejects non-pdf uploads', async () => {
+    const app = createApp({
+      aiService: mockAiService(),
+    })
+
+    const response = await request(app)
+      .post('/api/parse-document')
+      .attach('document', Buffer.from('not a pdf'), 'notes.txt')
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toMatch(/PDF/i)
+  })
+
   it('parses an uploaded pdf into a profile card', async () => {
     const profile = { patientName: 'Margaret Chen' }
     const aiService = mockAiService({

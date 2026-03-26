@@ -10,9 +10,11 @@ export default async function handler(req, res) {
     return app(req, res)
   } catch (error) {
     console.error('Vercel cold-start error:', error)
-    res.status(500).json({
-      error: 'Serverless initialization failed: ' + error.message,
-      stack: error.stack
-    })
+    const isProd = process.env.NODE_ENV === 'production'
+    const message =
+      isProd
+        ? 'Serverless initialization failed.'
+        : `Serverless initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    res.status(500).json({ error: message })
   }
 }

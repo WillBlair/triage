@@ -5,7 +5,44 @@ import { createClient } from '@supabase/supabase-js'
 import { createIntakeRoutes } from './intake.js'
 import { createEmailRoutes } from './email.js'
 
-const upload = multer({ storage: multer.memoryStorage() })
+const MAX_PDF_BYTES = 15 * 1024 * 1024
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_PDF_BYTES, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const mimeOk = file.mimetype === 'application/pdf'
+    const nameOk = file.originalname?.toLowerCase().endsWith('.pdf')
+    if (mimeOk || nameOk) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only PDF uploads are allowed.'))
+    }
+  },
+})
+
+function corsMiddleware() {
+  const allowed = process.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? []
+  return cors({
+    origin(origin, callback) {
+      if (allowed.length === 0) {
+        callback(null, true)
+        return
+      }
+      if (!origin) {
+        callback(null, true)
+        return
+      }
+      if (allowed.includes(origin)) {
+        callback(null, true)
+        return
+      }
+      callback(null, false)
+    },
+  })
+}
+
+const isProduction = process.env.NODE_ENV === 'production'
 
 // Server-side Supabase client for prescription persistence
 const supabaseUrl = process.env.VITE_SUPABASE_URL
@@ -15,7 +52,12 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 export function createApp({ aiService }) {
   const app = express()
 
-  app.use(cors())
+  app.disable('x-powered-by')
+  app.use(corsMiddleware())
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    next()
+  })
   app.use(express.json({ limit: '2mb' }))
   createIntakeRoutes(app)
   createEmailRoutes(app)
@@ -71,7 +113,10 @@ export function createApp({ aiService }) {
       if (doctorId) query = query.eq('doctor_id', doctorId)
 
       const { data, error } = await query
-      if (error) return response.status(500).json({ error: error.message })
+      if (error) {
+        console.error('Supabase prescriptions list error:', error)
+        return response.status(500).json({ error: 'Failed to list prescriptions.' })
+      }
 
       response.json({ prescriptions: data })
     } catch (error) {
@@ -147,9 +192,28 @@ export function createApp({ aiService }) {
   })
 
   app.use((error, _request, response, _next) => {
-    response.status(500).json({
-      error: error instanceof Error ? error.message : 'Unexpected server error.',
-    })
+    if (error instanceof multer.MulterError) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return response.status(413).json({ error: 'PDF must be 15 MB or smaller.' })
+      }
+      return response.status(400).json({ error: 'Upload could not be processed.' })
+    }
+
+    if (error instanceof Error && error.message === 'Only PDF uploads are allowed.') {
+      return response.status(400).json({ error: error.message })
+    }
+
+    const status = typeof error?.status === 'number' ? error.status : 500
+    let message = 'Unexpected server error.'
+    if (error instanceof Error) {
+      if (status < 500) {
+        message = error.message
+      } else if (!isProduction) {
+        message = error.message
+      }
+    }
+
+    response.status(status).json({ error: message })
   })
 
   return app
