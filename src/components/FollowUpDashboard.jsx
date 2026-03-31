@@ -254,7 +254,7 @@ function ConversationModal({ row, onClose }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 border-t-[0.5px] border-slate-200 px-[18px] py-[14px]">
-          <button type="button" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">Resend check-in</button>
+          <button type="button" onClick={() => alert('Demo mode — check-in resend is disabled.')} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">Resend check-in</button>
           <button type="button" onClick={onClose} className="rounded-lg bg-[#1D9E75] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#178A66]">Close</button>
         </div>
       </div>
@@ -594,6 +594,7 @@ export default function FollowUpDashboard({ doctorId }) {
                   {selected.prescription && (
                     <button
                       type="button"
+                      onClick={() => alert('Demo mode — check-in resend is disabled.')}
                       className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                     >
                       Resend check-in

@@ -3,7 +3,8 @@ import express from 'express'
 import multer from 'multer'
 import { createClient } from '@supabase/supabase-js'
 import { createIntakeRoutes } from './intake.js'
-import { createEmailRoutes } from './email.js'
+// Email routes removed — demo mode (no real emails sent)
+// import { createEmailRoutes } from './email.js'
 
 const MAX_PDF_BYTES = 15 * 1024 * 1024
 
@@ -101,7 +102,7 @@ export function createApp({ aiService }) {
   })
   app.use(express.json({ limit: '2mb' }))
   createIntakeRoutes(app)
-  createEmailRoutes(app)
+  // createEmailRoutes(app) — disabled for demo
 
   // ── Save prescription data ──
   app.post('/api/prescriptions', requireAuth, async (request, response, next) => {
