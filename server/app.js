@@ -5,11 +5,44 @@ import { createClient } from '@supabase/supabase-js'
 import { createIntakeRoutes } from './intake.js'
 import { createEmailRoutes } from './email.js'
 
-const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
+const MAX_PDF_BYTES = 15 * 1024 * 1024
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_BYTES },
+  limits: { fileSize: MAX_PDF_BYTES, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const mimeOk = file.mimetype === 'application/pdf'
+    const nameOk = file.originalname?.toLowerCase().endsWith('.pdf')
+    if (mimeOk || nameOk) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only PDF uploads are allowed.'))
+    }
+  },
 })
+
+function corsMiddleware() {
+  const allowed = process.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? []
+  return cors({
+    origin(origin, callback) {
+      if (allowed.length === 0) {
+        callback(null, true)
+        return
+      }
+      if (!origin) {
+        callback(null, true)
+        return
+      }
+      if (allowed.includes(origin)) {
+        callback(null, true)
+        return
+      }
+      callback(null, false)
+    },
+  })
+}
+
+const isProduction = process.env.NODE_ENV === 'production'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
@@ -60,20 +93,12 @@ async function requireAuth(req, res, next) {
 export function createApp({ aiService }) {
   const app = express()
 
-  // Restrict CORS to known frontend origins.
-  // Set ALLOWED_ORIGIN in .env for production (comma-separated for multiple).
-  const allowedOrigins = process.env.ALLOWED_ORIGIN
-    ? process.env.ALLOWED_ORIGIN.split(',').map(o => o.trim())
-    : ['http://localhost:5173']
-
-  app.use(cors({
-    origin: (origin, cb) => {
-      // Allow requests with no Origin header (e.g. same-origin, curl in dev)
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
-      cb(new Error('Not allowed by CORS'))
-    },
-    credentials: true,
-  }))
+  app.disable('x-powered-by')
+  app.use(corsMiddleware())
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    next()
+  })
   app.use(express.json({ limit: '2mb' }))
   createIntakeRoutes(app)
   createEmailRoutes(app)
@@ -122,7 +147,10 @@ export function createApp({ aiService }) {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (error) return response.status(500).json({ error: 'Failed to retrieve prescriptions.' })
+      if (error) {
+        console.error('Supabase prescriptions list error:', error)
+        return response.status(500).json({ error: 'Failed to retrieve prescriptions.' })
+      }
 
       response.json({ prescriptions: data })
     } catch (error) {
@@ -204,8 +232,28 @@ export function createApp({ aiService }) {
 
   // Generic error handler — no stack traces sent to clients
   app.use((error, _request, response, _next) => {
-    console.error('Unhandled server error:', error)
-    response.status(500).json({ error: 'An unexpected server error occurred.' })
+    if (error instanceof multer.MulterError) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return response.status(413).json({ error: 'PDF must be 15 MB or smaller.' })
+      }
+      return response.status(400).json({ error: 'Upload could not be processed.' })
+    }
+
+    if (error instanceof Error && error.message === 'Only PDF uploads are allowed.') {
+      return response.status(400).json({ error: error.message })
+    }
+
+    const status = typeof error?.status === 'number' ? error.status : 500
+    let message = 'Unexpected server error.'
+    if (error instanceof Error) {
+      if (status < 500) {
+        message = error.message
+      } else if (!isProduction) {
+        message = error.message
+      }
+    }
+
+    response.status(status).json({ error: message })
   })
 
   return app

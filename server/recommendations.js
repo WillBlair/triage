@@ -2,6 +2,15 @@ import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || ''
 
+const CLAUDE_REQUEST_TIMEOUT_MS = (() => {
+  const n = Number(process.env.ANTHROPIC_TIMEOUT_MS)
+  return Number.isFinite(n) && n > 0 ? n : 180_000
+})()
+
+function claudeSignal() {
+  return AbortSignal.timeout(CLAUDE_REQUEST_TIMEOUT_MS)
+}
+
 const JSON_RESPONSE_RULE =
   'Return ONLY valid JSON with no markdown, no preamble, and no extra commentary.'
 
@@ -111,6 +120,7 @@ ${JSON_RESPONSE_RULE}`
 async function askClaudeJson(system, payload, maxTokens = 1800) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: claudeSignal(),
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
@@ -148,6 +158,7 @@ export function createAiService() {
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal: claudeSignal(),
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
@@ -220,6 +231,7 @@ Focus on whether symptoms are expected for this medication, any concerning patte
 Be concise and clinical. Do not diagnose or prescribe. Return plain text only — no markdown, no JSON.`
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal: claudeSignal(),
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
