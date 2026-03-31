@@ -291,29 +291,10 @@ function StepSendIntake({
 
   const handleSendEmail = async () => {
     if (!intakeLink?.url || !patientEmail) return
+    // Demo mode — simulate email send without hitting real API
     setEmailStatus('sending')
     setEmailError('')
-    try {
-      const res = await fetch('/api/send-intake-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientEmail,
-          patientName,
-          doctorName,
-          doctorEmail,
-          intakeUrl: intakeLink.url,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to send email.')
-      }
-      setEmailStatus('sent')
-    } catch (err) {
-      setEmailStatus('error')
-      setEmailError(err instanceof Error ? err.message : 'Failed to send email.')
-    }
+    setTimeout(() => setEmailStatus('sent'), 800)
   }
 
   return (

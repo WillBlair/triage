@@ -11,10 +11,12 @@ node_modules
 dist
 dist-ssr
 .env
+.env.*
+!.env.example
 *.local
+triage-bot/responses.json
 /.agents
 skills-lock.json
-.mcp.json
 
 # Editor directories and files
 .vscode/*
