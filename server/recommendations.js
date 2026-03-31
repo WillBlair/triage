@@ -2,6 +2,15 @@ import { sortDrugsByModelFitRank } from '../lib/sortRecommendationDrugs.js'
 
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim() || ''
 
+const CLAUDE_REQUEST_TIMEOUT_MS = (() => {
+  const n = Number(process.env.ANTHROPIC_TIMEOUT_MS)
+  return Number.isFinite(n) && n > 0 ? n : 180_000
+})()
+
+function claudeSignal() {
+  return AbortSignal.timeout(CLAUDE_REQUEST_TIMEOUT_MS)
+}
+
 const JSON_RESPONSE_RULE =
   'Return ONLY valid JSON with no markdown, no preamble, and no extra commentary.'
 
@@ -67,10 +76,11 @@ Use the patient's actual data:
 - Flag ACE-I allergy if present — never recommend ACE inhibitors
 - Include hyperkalemia risk if ARB is selected and patient has concurrent K+ monitoring needs
 - Target range should reflect clinical goal (typically 120-130 systolic for hypertension with end-organ damage)
+- Ensure the trajectory is clinically logical (e.g., if reducing a BP med dose to treat orthostatic hypotension, BP might rise slightly; if adding a med, BP should drop). Explain this explicitly in the summary.
 
 Return JSON with this exact shape:
 {
-  "summary": "2-3 sentence clinical narrative specific to this patient and drug",
+  "summary": "2-3 sentence clinical narrative explicitly naming the patient. Explain exactly why their trajectory is moving in the charted direction with this specific drug.",
   "projectedMetric": "Systolic BP (mmHg)",
   "targetRange": { "low": 120, "high": 130 },
   "weeks": [
@@ -110,6 +120,7 @@ ${JSON_RESPONSE_RULE}`
 async function askClaudeJson(system, payload, maxTokens = 1800) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: claudeSignal(),
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
@@ -147,6 +158,7 @@ export function createAiService() {
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal: claudeSignal(),
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
@@ -219,6 +231,7 @@ Focus on whether symptoms are expected for this medication, any concerning patte
 Be concise and clinical. Do not diagnose or prescribe. Return plain text only — no markdown, no JSON.`
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal: claudeSignal(),
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,

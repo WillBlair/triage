@@ -326,7 +326,6 @@ function App() {
     setIsConfirming(true)
     try {
       await savePrescription({
-        doctorId: currentUserId,
         patientProfile: profile,
         selectedDrug,
         allRecommendations: recommendations,
@@ -350,8 +349,16 @@ function App() {
           'Review this chart snapshot. When you are ready, request AI treatment options to compare regimens.',
       }
     }
-    return SECTION_HEADER[activeSection]
-  }, [activeSection, librarySelectedEntry])
+    
+    const meta = { ...SECTION_HEADER[activeSection] }
+    if (activeSection === SECTION.SIMULATION && profile?.patientName) {
+      const firstName = profile.patientName.split(' ')[0]
+      meta.title = `Projected outlook for ${firstName}`
+      meta.description = `Generate a customized multi-week predictive scenario detailing exactly how ${firstName} will respond to the selected regimen.`
+    }
+    
+    return meta
+  }, [activeSection, librarySelectedEntry, profile])
 
   const beginFlow = useCallback(async () => {
     setView(VIEW.LOADING)
@@ -582,6 +589,7 @@ function App() {
                   selectedDrug={selectedDrug}
                   simulation={simulation}
                   isRunning={isRunningSimulation}
+                  patientName={profile?.patientName || profile?.name}
                   onRun={handleRunSimulation}
                 />
               ) : null}

@@ -1,4 +1,12 @@
+import { supabase } from './supabase.js'
+
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
+
+async function authHeaders() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return JSON_HEADERS
+  return { ...JSON_HEADERS, Authorization: `Bearer ${session.access_token}` }
+}
 
 async function readJson(response) {
   const payload = await response.json()
@@ -71,11 +79,11 @@ export async function runSimulation(profile, recommendation, onEvent) {
   }
 }
 
-export async function savePrescription({ doctorId, patientProfile, selectedDrug, allRecommendations, simulation }) {
+export async function savePrescription({ patientProfile, selectedDrug, allRecommendations, simulation }) {
   const response = await fetch('/api/prescriptions', {
     method: 'POST',
-    headers: JSON_HEADERS,
-    body: JSON.stringify({ doctorId, patientProfile, selectedDrug, allRecommendations, simulation }),
+    headers: await authHeaders(),
+    body: JSON.stringify({ patientProfile, selectedDrug, allRecommendations, simulation }),
   })
 
   return readJson(response)
