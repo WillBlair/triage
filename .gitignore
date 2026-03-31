@@ -16,6 +16,10 @@ dist-ssr
 skills-lock.json
 .mcp.json
 
+# Security & sensitive docs
+*.security.md
+security-*.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

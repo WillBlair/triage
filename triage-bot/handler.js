@@ -103,17 +103,26 @@ export function handleSymptomSelection(userId, selectedValues) {
  *   closing: string
  * }>}
  */
+// Maximum characters accepted from a patient DM before truncation.
+// Prevents token-stuffing / prompt-length abuse.
+const MAX_FREE_TEXT_LENGTH = 1000
+
 export async function handleFreeText(userId, freeText) {
+  // Truncate and strip null bytes before any processing
+  const sanitizedText = String(freeText ?? '')
+    .replace(/\0/g, '')
+    .slice(0, MAX_FREE_TEXT_LENGTH)
+
   const session = sessions.get(userId) ?? { stage: "freetext", symptoms: [], prescriptionId: null };
 
   // Keep stage as "freetext" so the 5-minute inactivity window in index.js
   // can accept follow-up messages before closing the session.
   sessions.set(userId, session);
 
-  const emergencyFlag = shouldFlag(session.symptoms, freeText);
+  const emergencyFlag = shouldFlag(session.symptoms, sanitizedText);
 
   const [claudeResponse] = await Promise.all([
-    buildClaudeResponse(session.symptoms, freeText),
+    buildClaudeResponse(session.symptoms, sanitizedText),
   ]);
 
   session.lastClaudeResponse = claudeResponse;
@@ -122,7 +131,7 @@ export async function handleFreeText(userId, freeText) {
   await logSession({
     userId,
     symptoms: session.symptoms,
-    freeText,
+    freeText: sanitizedText,
     emergencyFlag,
     prescriptionId: session.prescriptionId ?? null,
     claudeResponse,

@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Triage — Hackathon Pitch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+      background:
+        radial-gradient(ellipse 120% 80% at 50% -10%, rgba(13,148,136,0.13), transparent 55%),
+        radial-gradient(circle at 100% 0%, rgba(15,118,110,0.07), transparent 35%),
+        linear-gradient(180deg, #f8fafc 0%, #f1f5f4 100%);
+      background-attachment: fixed;
+      color: #0f172a;
+      overflow: hidden;
+    }
+
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      text-align: center;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .slide.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Brand colours matching the app ── */
+    .accent  { color: #0d9488; }   /* teal-600  */
+    .teal    { color: #0f766e; }   /* teal-700  */
+    .red     { color: #e11d48; }   /* rose-600  */
+    .amber   { color: #d97706; }   /* amber-600 */
+
+    /* ── Typography — Fraunces for display, DM Sans for body ── */
+    h1 {
+      font-family: 'Fraunces', ui-serif, Georgia, serif;
+      font-size: 3.8rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #0f172a;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-family: 'Fraunces', ui-serif, Georgia, serif;
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 28px;
+    }
+    h3 { font-size: 1rem; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+    p  { font-size: 1.1rem; color: #64748b; line-height: 1.7; max-width: 800px; }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+
+    /* ── Tag pill — matches app's uppercase teal label ── */
+    .tag {
+      display: inline-block;
+      background: #ccfbf1;
+      color: #0f766e;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+      border: 1px solid #99f6e4;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      width: 48px;
+      height: 3px;
+      background: #0d9488;
+      border-radius: 2px;
+      margin: 18px auto 28px;
+    }
+
+    /* ── Stat row ── */
+    .stats {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 32px;
+    }
+    .stat {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 22px 32px;
+      min-width: 150px;
+      box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+    }
+    .stat-num {
+      font-family: 'Fraunces', ui-serif, Georgia, serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #0d9488;
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* ── Feature / content grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 16px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px 18px;
+      text-align: left;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    }
+    .card-icon {
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: rgba(13,148,136,0.08);
+      border-radius: 10px;
+    }
+    .card h3 { font-size: 0.95rem; color: #0f172a; }
+    .card p  { font-size: 0.84rem; color: #64748b; line-height: 1.55; max-width: none; margin-top: 4px; }
+
+    /* ── Flow steps ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .step {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      color: #334155;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+      line-height: 1.5;
+    }
+    .arrow { font-size: 1.2rem; color: #cbd5e1; }
+
+    /* ── Tech pills ── */
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .pill {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 5px 16px;
+      font-size: 0.84rem;
+      color: #475569;
+    }
+
+    /* ── Team cards ── */
+    .team-grid {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .member {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px 24px 18px;
+      width: 178px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    }
+    .avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin: 0 auto 12px;
+      background: #0d9488;
+    }
+    .member h3 { font-size: 0.95rem; color: #0f172a; margin-bottom: 4px; }
+    .member p  { font-size: 0.78rem; color: #64748b; max-width: none; line-height: 1.4; }
+
+    /* ── CTA box ── */
+    .cta-box {
+      background: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, rgba(240,253,250,0.9) 100%);
+      border: 1px solid #99f6e4;
+      border-radius: 20px;
+      padding: 36px 52px;
+      margin-top: 28px;
+    }
+    .cta-box h3 {
+      font-family: 'Fraunces', ui-serif, Georgia, serif;
+      font-size: 1.35rem;
+      color: #0f766e;
+      margin-bottom: 8px;
+    }
+    .cta-box p { font-size: 1rem; color: #64748b; max-width: none; }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 7px 18px;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(15,23,42,0.08);
+    }
+    .nav button {
+      background: none;
+      border: none;
+      color: #64748b;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav button:hover { color: #0d9488; background: #f0fdfa; }
+    .nav-count { font-size: 0.82rem; color: #94a3b8; min-width: 48px; text-align: center; }
+
+    /* ── Story slide ── */
+    .story-layout {
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
+      width: 100%;
+      max-width: 960px;
+      margin-top: 8px;
+    }
+    .story-col { flex: 1; }
+    .story-phase {
+      border-radius: 16px;
+      padding: 22px 24px;
+      text-align: left;
+      height: 100%;
+    }
+    /* Before — rose */
+    .red-phase   { background: #fff1f2; border: 1px solid #fecdd3; }
+    /* After — teal */
+    .green-phase { background: #f0fdfa; border: 1px solid #99f6e4; }
+    .story-icon  { font-size: 1.8rem; margin-bottom: 10px; }
+    .story-phase h3 { font-size: 1rem; margin-bottom: 8px; }
+    .story-phase p  { font-size: 0.85rem; color: #64748b; line-height: 1.6; max-width: none; }
+    .story-divider-v {
+      font-size: 1.6rem;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      padding: 0 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1. TITLE -->
+  <section class="slide active" id="s1">
+    <div class="tag">Hackathon Pitch · 2026</div>
+    <h1><span class="accent">Triage</span></h1>
+    <p class="subtitle">AI-powered clinical decision support for blood pressure management</p>
+    <div class="divider"></div>
+    <p>From messy discharge notes to evidence-based drug recommendations<br>and automated patient follow-up — in minutes, not hours.</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Drug options<br>per patient</div></div>
+      <div class="stat"><div class="stat-num">8 wk</div><div class="stat-label">Outcome<br>simulation</div></div>
+      <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Discord<br>follow-up bot</div></div>
+    </div>
+  </section>
+
+  <!-- 2. THE PROBLEM -->
+  <section class="slide" id="s2">
+    <div class="tag">The Problem</div>
+    <h2>Doctors are drowning in data,<br><span class="red">not decisions.</span></h2>
+    <div class="divider"></div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-icon">📄</div>
+        <h3>Chart overload</h3>
+        <p>Clinicians manually review dense discharge summaries before every prescribing decision.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧠</div>
+        <h3>Cognitive load</h3>
+        <p>Balancing drug interactions, lab values, and guidelines in real-time is error-prone.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔕</div>
+        <h3>No post-care loop</h3>
+        <p>Side effects and adverse reactions often go unreported between appointments.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2b. MARGARET'S STORY -->
+  <section class="slide" id="s2b">
+    <div class="tag">A Real Story</div>
+    <h2>Meet <span class="accent">Margaret</span>, 67</h2>
+    <div class="divider"></div>
+    <div class="story-layout">
+      <div class="story-col">
+        <div class="story-phase red-phase">
+          <div class="story-icon">😰</div>
+          <h3 class="red">Before Triage</h3>
+          <p>Margaret came in after a hypertensive crisis — BP 178/112. Her doctor had 11 minutes. He skimmed a 9-page discharge note, tried to recall ACE inhibitor contraindications for her CKD, and prescribed from memory.</p>
+          <p style="margin-top:10px;">Three weeks later, Margaret's potassium spiked. She felt weak, didn't think to call. Her daughter found her on the kitchen floor.</p>
+          <p style="margin-top:10px; color:#e11d48; font-weight:600;">A preventable hospitalization. A terrified family. A doctor haunted by what he missed.</p>
+        </div>
+      </div>
+      <div class="story-divider-v">→</div>
+      <div class="story-col">
+        <div class="story-phase green-phase">
+          <div class="story-icon">💚</div>
+          <h3 class="accent">With Triage</h3>
+          <p>Same doctor. Same 11 minutes. He uploads the discharge note. In seconds, Triage flags her CKD, surfaces an ARB over an ACE inhibitor, and scores it 91/100 for her profile.</p>
+          <p style="margin-top:10px;">He selects it. The 8-week simulation immediately highlights hyperkalemia risk and sets a renal monitoring flag at week 3.</p>
+          <p style="margin-top:10px;">Two weeks in, Margaret's Discord check-in reports fatigue and muscle weakness. Triage flags it as a potential potassium issue — her doctor calls her that afternoon.</p>
+          <p style="margin-top:10px; color:#0d9488; font-weight:600;">Margaret stays home. Her doctor sleeps at night.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. THE SOLUTION -->
+  <section class="slide" id="s3">
+    <div class="tag">The Solution</div>
+    <h2><span class="accent">Triage</span> — a 3-step AI wizard<br>for smarter prescribing</h2>
+    <div class="divider"></div>
+    <div class="flow">
+      <div class="step">📤 Upload PDF<br><small style="color:#94a3b8">discharge note / chart</small></div>
+      <div class="arrow">→</div>
+      <div class="step">🤖 Claude extracts<br><small style="color:#94a3b8">structured patient profile</small></div>
+      <div class="arrow">→</div>
+      <div class="step">💊 3 drug options<br><small style="color:#94a3b8">ranked by fit score</small></div>
+      <div class="arrow">→</div>
+      <div class="step">📈 8-week simulation<br><small style="color:#94a3b8">BP trajectory + risk flags</small></div>
+      <div class="arrow">→</div>
+      <div class="step">📲 Discord bot<br><small style="color:#94a3b8">automated follow-up</small></div>
+    </div>
+  </section>
+
+  <!-- 4. KEY FEATURES -->
+  <section class="slide" id="s4">
+    <div class="tag">Key Features</div>
+    <h2>Everything a clinician needs<br>at <span class="accent">decision time</span></h2>
+    <div class="divider"></div>
+    <div class="grid">
+      <div class="card">
+        <div class="card-icon">🗂️</div>
+        <h3>Instant Chart Parsing</h3>
+        <p>Claude reads your PDF and returns a clean, structured patient profile with vitals, meds, and allergies.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚖️</div>
+        <h3>Ranked Drug Comparison</h3>
+        <p>Three differentiated options — each with a patient-specific fit score, rationale, cost, and guideline citations.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>8-Week BP Projection</h3>
+        <p>Real-time streamed simulation showing BP trajectory, side-effect probabilities, and drug interaction matrix.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <h3>Discord Follow-Up Bot</h3>
+        <p>Automated post-care check-ins screen for side effects and flag emergencies 24/7 — no nurse time needed.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. HOW IT WORKS (TECH) -->
+  <section class="slide" id="s5">
+    <div class="tag">Under the Hood</div>
+    <h2>Built with a <span class="accent">production-ready</span> stack</h2>
+    <div class="divider"></div>
+    <div class="grid" style="max-width:700px; grid-template-columns: 1fr 1fr;">
+      <div class="card">
+        <div class="card-icon">⚛️</div>
+        <h3>Frontend</h3>
+        <p>React 18 + Vite · Tailwind CSS · D3.js timeline visualisation</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🖥️</div>
+        <h3>Backend</h3>
+        <p>Express.js 5 · NDJSON streaming · Supabase real-time DB · Resend email</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧠</div>
+        <h3>AI Layer</h3>
+        <p>Claude Sonnet 4 for parsing, ranking, simulation prompts, and bot responses</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <h3>Bot Platform</h3>
+        <p>Discord.js 14 · Platform-agnostic handler (Telegram-ready) · Emergency keyword detection</p>
+      </div>
+    </div>
+    <div class="pills" style="margin-top:20px">
+      <span class="pill">Deployed on Vercel</span>
+      <span class="pill">Supabase Realtime</span>
+      <span class="pill">Token-gated patient intake</span>
+      <span class="pill">NDJSON streaming</span>
+    </div>
+  </section>
+
+  <!-- 6. DEMO HIGHLIGHTS -->
+  <section class="slide" id="s6">
+    <div class="tag">What We Built in 3 Days</div>
+    <h2>Fully working, end-to-end <span class="accent">demo</span></h2>
+    <div class="divider"></div>
+    <div class="grid" style="max-width:800px; grid-template-columns: 1fr 1fr 1fr;">
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h3>PDF → Profile</h3>
+        <p>Upload any clinical note and get a structured patient card in seconds.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h3>Drug Comparison UI</h3>
+        <p>Three cards with fit scores, rationale, cautions, and one-click selection.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h3>Live BP Timeline</h3>
+        <p>Streaming D3 chart builds in real-time as Claude generates the simulation.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h3>Patient Intake Link</h3>
+        <p>Secure token emailed to patient; responses flow back to doctor dashboard.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h3>Discord Bot Live</h3>
+        <p>Real prescriptions trigger automated DMs; emergencies flag the doctor instantly.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h3>Realtime Updates</h3>
+        <p>Supabase listeners push patient check-in data to the follow-up dashboard live.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. THE TEAM -->
+  <section class="slide" id="s7">
+    <div class="tag">The Team</div>
+    <h2>4 builders, <span class="accent">one mission</span></h2>
+    <div class="divider"></div>
+    <div class="team-grid">
+      <div class="member">
+        <div class="avatar">👤</div>
+        <h3>Reem Al Roumi</h3>
+        <p>Full-Stack / Database</p>
+      </div>
+      <div class="member">
+        <div class="avatar">👤</div>
+        <h3>Bryan Rivera Garcia</h3>
+        <p>Front-end / UX</p>
+      </div>
+      <div class="member">
+        <div class="avatar">👤</div>
+        <h3>William Blair</h3>
+        <p>Full-Stack / AI Integration</p>
+      </div>
+      <div class="member">
+        <div class="avatar">👤</div>
+        <h3>Brandon Louissaint</h3>
+        <p>Full-Stack / Bot / Integrations</p>
+      </div>
+    </div>
+    <p style="margin-top:28px; font-size:1rem;">
+      Built end-to-end in <strong style="color:#0d9488;">72 hours</strong> at the hackathon.
+    </p>
+  </section>
+
+  <!-- 8. CALL TO ACTION -->
+  <section class="slide" id="s8">
+    <div class="tag">What's Next</div>
+    <h2>The road from <span class="accent">prototype</span><br>to clinical tool</h2>
+    <div class="divider"></div>
+    <div class="grid" style="max-width:700px; grid-template-columns: 1fr 1fr;">
+      <div class="card">
+        <div class="card-icon">🏥</div>
+        <h3>Pilot with clinics</h3>
+        <p>Partner with a primary care practice to validate fit scores against real outcomes.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <h3>Expand drug coverage</h3>
+        <p>Extend beyond BP — diabetes, anticoagulation, and post-op pain management.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <h3>HIPAA compliance</h3>
+        <p>Encryption at rest, audit logging, and BAA with cloud providers for production.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📱</div>
+        <h3>SMS / Telegram bot</h3>
+        <p>Platform-agnostic handler already built — reach patients where they are.</p>
+      </div>
+    </div>
+    <div class="cta-box">
+      <h3>Triage — because the right decision<br>shouldn't take all day.</h3>
+      <p style="margin-top:8px;">Questions? Let's talk. 🩺</p>
+    </div>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<nav class="nav">
+  <button id="prev" onclick="navigate(-1)">← Prev</button>
+  <span class="nav-count" id="counter">1 / 9</span>
+  <button id="next" onclick="navigate(1)">Next →</button>
+</nav>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function show(index) {
+    slides[current].classList.remove('active');
+    current = (index + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  function navigate(dir) { show(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+</script>
+</body>
+</html>

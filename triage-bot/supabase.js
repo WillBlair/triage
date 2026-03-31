@@ -1,6 +1,15 @@
 /**
  * supabase.js — Shared Supabase client for the Triage bot.
- * Uses the service role key so it can bypass RLS for server-side operations.
+ *
+ * SECURITY: Uses the service role key (SUPABASE_SERVICE_ROLE_KEY) which bypasses
+ * Supabase Row Level Security. This is intentional for server-side bot operations
+ * (Realtime subscription, check-in logging, prescription status updates).
+ *
+ * The service role key MUST remain server-side only:
+ *   - Never returned in any Discord message or bot response
+ *   - Never passed to the Anthropic API as part of a conversation
+ *   - Never logged to stdout in full (only length/presence is checked)
+ *   - Loaded from triage-bot/.env which is gitignored
  *
  * SQL SCHEMA REFERENCE:
  *   prescriptions(id, patient_email, medication_name, prescribed_at, checked_in, discord_user_id)

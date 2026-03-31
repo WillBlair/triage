@@ -118,5 +118,85 @@
     "freeText": "I feel a bit weak",
     "emergencyFlag": false,
     "prescriptionId": "rx_abc"
+  },
+  {
+    "timestamp": "2026-03-22T19:47:38.257Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache",
+      "fatigue",
+      "dizziness"
+    ],
+    "freeText": "Nothing besides what I already said",
+    "emergencyFlag": true,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T19:48:02.841Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache",
+      "fatigue",
+      "dizziness"
+    ],
+    "freeText": "I also am experiencing depression and anxiety",
+    "emergencyFlag": true,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T19:48:06.707Z",
+    "userHash": "7c76a6e609a1d60ffa1a29a24c23ecfd6f93e539a8c2275a2d2eb1d96a7629a3",
+    "symptoms": [
+      "headache",
+      "fatigue",
+      "dizziness"
+    ],
+    "freeText": "",
+    "emergencyFlag": true,
+    "prescriptionId": null
+  },
+  {
+    "timestamp": "2026-03-22T20:01:27.916Z",
+    "userHash": "7977cfed10d48bbd45b18dc182825bf46163a633235dea476940c9dc589f19d9",
+    "symptoms": [
+      "fatigue",
+      "headache"
+    ],
+    "freeText": "I feel dizzy and i feel like throwing up.",
+    "emergencyFlag": false,
+    "prescriptionId": "241cedec-0f52-4cfd-9ee6-b4131a45ac8d"
+  },
+  {
+    "timestamp": "2026-03-22T20:01:40.529Z",
+    "userHash": "7977cfed10d48bbd45b18dc182825bf46163a633235dea476940c9dc589f19d9",
+    "symptoms": [
+      "fatigue",
+      "headache"
+    ],
+    "freeText": "",
+    "emergencyFlag": false,
+    "prescriptionId": "241cedec-0f52-4cfd-9ee6-b4131a45ac8d"
+  },
+  {
+    "timestamp": "2026-03-22T20:27:37.134Z",
+    "userHash": "7977cfed10d48bbd45b18dc182825bf46163a633235dea476940c9dc589f19d9",
+    "symptoms": [
+      "nausea",
+      "dizziness"
+    ],
+    "freeText": "i feel like i’m going to faint why should i do?",
+    "emergencyFlag": false,
+    "prescriptionId": "0b7aa7ff-b656-4950-8989-1ca4130b992e"
+  },
+  {
+    "timestamp": "2026-03-22T21:18:18.702Z",
+    "userHash": "7977cfed10d48bbd45b18dc182825bf46163a633235dea476940c9dc589f19d9",
+    "symptoms": [
+      "nausea",
+      "dizziness"
+    ],
+    "freeText": "",
+    "emergencyFlag": false,
+    "prescriptionId": "0b7aa7ff-b656-4950-8989-1ca4130b992e"
   }
 ]

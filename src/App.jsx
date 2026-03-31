@@ -326,7 +326,6 @@ function App() {
     setIsConfirming(true)
     try {
       await savePrescription({
-        doctorId: currentUserId,
         patientProfile: profile,
         selectedDrug,
         allRecommendations: recommendations,
